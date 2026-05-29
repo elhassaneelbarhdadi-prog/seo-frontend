@@ -1,0 +1,141 @@
+/* ========================= */
+/* 🌐 ROOT */
+/* ========================= */
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* ========================= */
+/* 📊 RESULT CARD */
+/* ========================= */
+.result-card {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  margin: 30px auto;
+  max-width: 400px;
+
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+/* ========================= */
+/* 🎯 SCORE */
+/* ========================= */
+.score-wrapper {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  margin: auto;
+}
+
+.score-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  font-size: 42px;
+  font-weight: bold;
+}
+
+.score-text span {
+  font-size: 18px;
+  color: gray;
+}
+
+/* ========================= */
+/* 🏷 BADGE */
+/* ========================= */
+.score-badge {
+  margin-top: 15px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+.score-badge.bad {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.score-badge.medium {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.score-badge.good {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+/* ========================= */
+/* 📈 BREAKDOWN */
+/* ========================= */
+.breakdown {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.score-bar {
+  margin-bottom: 15px;
+}
+
+.score-bar-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.score-bar-bg {
+  background: #e5e7eb;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+/* ========================= */
+/* 💎 PRO BUTTON */
+/* ========================= */
+.pro-button {
+  margin-top: 15px;
+  padding: 14px 20px;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  transition: all 0.25s ease;
+}
+
+.pro-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+}
+
+.pro-price {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
