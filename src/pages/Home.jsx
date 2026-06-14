@@ -18,10 +18,10 @@ export default function Home() {
                 </h1>
 
                 <p className="max-w-3xl mx-auto text-xl text-indigo-100 mb-10">
-                    Analysez vos mots-clés, découvrez leur potentiel SEO et trouvez
-                    des opportunités de trafic qualifié en quelques secondes.
+                    Découvrez des mots-clés rentables, analysez la concurrence
+                    et trouvez des opportunités SEO capables de générer du trafic
+                    et des clients pour votre activité.
                 </p>
-
                 <button
                     onClick={() => navigate(`/${lang}/dashboard/keywords`)}
                     className="bg-black text-white px-8 py-4 rounded-xl text-lg font-semibold hover:scale-105 transition"
@@ -30,7 +30,7 @@ export default function Home() {
                 </button>
 
                 <p className="mt-6 text-indigo-200">
-                    5 analyses offertes sans engagement
+                    🎁 5 analyses SEO gratuites pour commencer
                 </p>
 
             </section>
@@ -51,26 +51,25 @@ export default function Home() {
 
                     <div>
                         <h3 className="text-4xl font-bold text-indigo-600">
-                            +35%
+                            &lt; 5s
                         </h3>
                         <p className="text-gray-600">
-                            trafic SEO moyen observé
+                            analyse SEO instantanée
                         </p>
                     </div>
 
                     <div>
                         <h3 className="text-4xl font-bold text-indigo-600">
-                            24/7
+                            5
                         </h3>
                         <p className="text-gray-600">
-                            disponibilité
+                            analyses gratuites offertes
                         </p>
                     </div>
 
                 </div>
 
             </section>
-
             {/* PROBLEME */}
             <section className="bg-gray-50 py-20 px-6 text-center">
 
