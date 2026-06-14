@@ -23,7 +23,7 @@ export default function Home() {
                     et des clients pour votre activité.
                 </p>
                 <button
-                    onClick={() => navigate(`/${lang}/dashboard/keywords`)}
+                    onClick={() => navigate(`/${lang}/free-analyzer`)}
                     className="bg-black text-white px-8 py-4 rounded-xl text-lg font-semibold hover:scale-105 transition"
                 >
                     🚀 Tester gratuitement

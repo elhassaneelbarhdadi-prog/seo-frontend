@@ -109,11 +109,16 @@ const request = async (
 /* ========================= */
 
 export const analyzeKeyword = (keyword) =>
-    request(API.seoAnalyze, {
-        method: "POST",
-        body: JSON.stringify({ keyword })
-    });
-
+    request(
+        API.seoAnalyze,
+        {
+            method: "POST",
+            body: JSON.stringify({ keyword })
+        },
+        {
+            isPublic: true
+        }
+    );
 export const deleteKeyword = async (id) => {
     return request(`/keyword/${id}`, {
         method: "DELETE"
