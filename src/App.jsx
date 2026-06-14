@@ -231,10 +231,6 @@ export default function App() {
             path="/:lang/free-analyzer"
             element={<KeywordAnalyzer />}
           />
-          <Route
-            path="/:lang/free-analyzer"
-            element={<FreeAnalyzer />}
-          />
 
           {/* SEO */}
           <Route
