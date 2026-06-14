@@ -1,15 +1,143 @@
 
+import { useNavigate, useParams } from "react-router-dom";
+
 export default function Home() {
+
+    const navigate = useNavigate();
+    const { lang = "fr" } = useParams();
+
     return (
-        <div style={{
-            background: "red",
-            color: "white",
-            minHeight: "100vh",
-            fontSize: "60px",
-            textAlign: "center",
-            paddingTop: "100px"
-        }}>
-            HOME UNIQUE 777777
+
+        <div className="min-h-screen bg-white">
+
+            {/* HERO */}
+            <section className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-24 px-6 text-center">
+
+                <h1 className="text-5xl font-bold mb-6">
+                    🚀 Outil SEO gratuit pour trouver des mots-clés rentables
+                </h1>
+
+                <p className="max-w-3xl mx-auto text-xl text-indigo-100 mb-10">
+                    Analysez vos mots-clés, découvrez leur potentiel SEO et trouvez
+                    des opportunités de trafic qualifié en quelques secondes.
+                </p>
+
+                <button
+                    onClick={() => navigate(`/${lang}/dashboard/keywords`)}
+                    className="bg-black text-white px-8 py-4 rounded-xl text-lg font-semibold hover:scale-105 transition"
+                >
+                    🚀 Tester gratuitement
+                </button>
+
+                <p className="mt-6 text-indigo-200">
+                    5 analyses offertes sans engagement
+                </p>
+
+            </section>
+
+            {/* PREUVE */}
+            <section className="py-16 px-6">
+
+                <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-10 text-center">
+
+                    <div>
+                        <h3 className="text-4xl font-bold text-indigo-600">
+                            +1000
+                        </h3>
+                        <p className="text-gray-600">
+                            analyses réalisées
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 className="text-4xl font-bold text-indigo-600">
+                            +35%
+                        </h3>
+                        <p className="text-gray-600">
+                            trafic SEO moyen observé
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 className="text-4xl font-bold text-indigo-600">
+                            24/7
+                        </h3>
+                        <p className="text-gray-600">
+                            disponibilité
+                        </p>
+                    </div>
+
+                </div>
+
+            </section>
+
+            {/* PROBLEME */}
+            <section className="bg-gray-50 py-20 px-6 text-center">
+
+                <h2 className="text-4xl font-bold mb-10">
+                    Pourquoi la plupart des projets SEO échouent ?
+                </h2>
+
+                <div className="space-y-4 text-xl text-gray-700">
+
+                    <p>❌ Mauvais choix de mots-clés</p>
+                    <p>❌ Concurrence trop forte</p>
+                    <p>❌ Faible potentiel commercial</p>
+
+                </div>
+
+            </section>
+
+            {/* SOLUTION */}
+            <section className="py-20 px-6">
+
+                <div className="max-w-6xl mx-auto">
+
+                    <h2 className="text-4xl font-bold text-center mb-14">
+                        Une plateforme SEO complète
+                    </h2>
+
+                    <div className="grid md:grid-cols-2 gap-12 text-lg">
+
+                        <ul className="space-y-5">
+                            <li>✅ Analyse de mots-clés</li>
+                            <li>✅ Détection d'opportunités SEO</li>
+                            <li>✅ Estimation du trafic potentiel</li>
+                        </ul>
+
+                        <ul className="space-y-5">
+                            <li>✅ Suggestions SEO intelligentes</li>
+                            <li>✅ Analyse de la concurrence</li>
+                            <li>✅ Référencement local optimisé</li>
+                        </ul>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+            {/* CTA */}
+            <section className="bg-black text-white py-20 px-6 text-center">
+
+                <h2 className="text-4xl font-bold mb-6">
+                    Commencez gratuitement aujourd'hui
+                </h2>
+
+                <p className="text-gray-300 mb-10">
+                    Testez l'outil avec 5 analyses offertes.
+                </p>
+
+                <button
+                    onClick={() => navigate(`/${lang}/register`)}
+                    className="bg-indigo-600 px-8 py-4 rounded-xl text-lg hover:scale-105 transition"
+                >
+                    🚀 Créer un compte
+                </button>
+
+            </section>
+
         </div>
+
     );
 }
