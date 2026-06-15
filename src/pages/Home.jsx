@@ -98,16 +98,16 @@ export default function Home() {
 
                     <div className="grid md:grid-cols-2 gap-12 text-lg">
 
-                        <ul className="space-y-5">
+                        <ul className="space-y-6">
                             <li>✅ Analyse de mots-clés</li>
                             <li>✅ Détection d'opportunités SEO</li>
                             <li>✅ Estimation du trafic potentiel</li>
                         </ul>
 
-                        <ul className="space-y-5">
+                        <ul className="space-y-6">
                             <li>✅ Suggestions SEO intelligentes</li>
                             <li>✅ Analyse de la concurrence</li>
-                            <li>✅ Référencement local optimisé</li>
+                            <li>✅ Référencement de votre entreprise sur Google via notre annuaire SEO</li>
                         </ul>
 
                     </div>
