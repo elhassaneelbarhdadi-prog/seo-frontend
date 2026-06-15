@@ -109,6 +109,24 @@ export default function Home() {
                             <li>✅ Analyse de la concurrence</li>
                             <li>✅ Référencement de votre entreprise sur Google via notre annuaire SEO</li>
                         </ul>
+                        <div className="mt-12 bg-indigo-50 rounded-2xl p-8">
+                            <h3 className="text-2xl font-bold mb-4">
+                                📍 Annuaire SEO Professionnel
+                            </h3>
+
+                            <p className="text-gray-600 mb-4">
+                                Publiez votre entreprise dans notre annuaire SEO,
+                                améliorez votre visibilité locale et obtenez des visiteurs
+                                qualifiés depuis Google.
+                            </p>
+
+                            <button
+                                onClick={() => navigate(`/${lang}/register`)}
+                                className="bg-indigo-600 text-white px-6 py-3 rounded-xl"
+                            >
+                                Ajouter mon entreprise
+                            </button>
+                        </div>
 
                     </div>
 
