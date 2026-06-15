@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { analyzeKeyword } from "../services/api";
+
 import { useNavigate, useParams } from "react-router-dom";
+import {
+    analyzeKeywordFree
+} from "../services/api";
 
 const FREE_LIMIT = 5;
 
@@ -36,10 +39,10 @@ export default function FreeAnalyzer() {
 
         try {
 
-            const data = await analyzeKeyword(
-                keyword.trim()
-            );
-
+            const data =
+                await analyzeKeywordFree(
+                    keyword.trim()
+                );
             setResult(data);
 
             localStorage.setItem(

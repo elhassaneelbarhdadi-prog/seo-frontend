@@ -107,6 +107,18 @@ const request = async (
 /* ========================= */
 /* 🚀 SEO */
 /* ========================= */
+export const analyzeKeywordFree = (keyword) =>
+    request(
+        "/seo/free-analyze",
+        {
+            method: "POST",
+            body: JSON.stringify({ keyword })
+        },
+        {
+            isPublic: true
+        }
+    );
+
 
 export const analyzeKeyword = (keyword) =>
     request(
