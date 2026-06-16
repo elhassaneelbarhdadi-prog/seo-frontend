@@ -4,8 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 
 const API_URL =
     import.meta.env.VITE_API_URL ||
-    "https://seo-tool-api-lo6k.onrender.com/api";
-
+    "https://seo-tool-api-lo6k.onrender.com";
 /* ========================= */
 /* 🔥 CLEAN KEYWORD */
 /* ========================= */
@@ -96,12 +95,8 @@ export default function AnnuairePage() {
 
                 const [seoRes, profilesRes] =
                     await Promise.all([
-                        fetch(
-                            `${API_URL}/seo-page?slug=${slug}`
-                        ),
-                        fetch(
-                            `${API_URL}/business-profile`
-                        )
+                        fetch(`${API_URL}/api/seo-page?slug=${slug}`),
+                        fetch(`${API_URL}/api/business-profile`)
                     ]);
 
                 if (!seoRes.ok) {
@@ -128,12 +123,12 @@ export default function AnnuairePage() {
 
                 if (
                     Array.isArray(
-                        profilesData?.profiles
+                        profilesData?.businesses
                     )
                 ) {
 
                     const filtered =
-                        profilesData.profiles.filter(
+                        profilesData.businesses.filter(
                             (p) => {
 
                                 const k =
