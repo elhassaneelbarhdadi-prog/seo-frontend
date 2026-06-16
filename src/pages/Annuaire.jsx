@@ -24,28 +24,29 @@ export default function Annuaire() {
             setLoading(true);
             setHasSearched(true);
 
-            const response = await fetch(
-                `${API_URL} /api/business - profile ? search = ${encodeURIComponent(search)} `
-            );
+            const url =
+                `${API_URL}/api/business-profile?search=${encodeURIComponent(search)}`;
+
+            console.log("FETCH URL:", url);
+
+            const response = await fetch(url);
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status} `);
+                throw new Error(`HTTP ${response.status}`);
             }
 
             const data = await response.json();
 
-            console.log("✅ BUSINESSES:", data);
+            console.log("BUSINESS DATA:", data);
 
             setBusinesses(
-                data.businesses ||
-                data.profiles ||
-                []
+                data.businesses || []
             );
 
         } catch (err) {
 
             console.error(
-                "❌ LOAD BUSINESSES ERROR:",
+                "LOAD BUSINESSES ERROR:",
                 err
             );
 
@@ -57,7 +58,6 @@ export default function Annuaire() {
 
         }
     };
-
     return (
 
         <div className="max-w-6xl mx-auto px-6 py-12">

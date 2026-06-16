@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { request, API } from "../services/api";
+import { request } from "../services/api";
 
 export default function BusinessProfile() {
 
