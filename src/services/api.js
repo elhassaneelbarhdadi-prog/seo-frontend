@@ -121,15 +121,7 @@ export const analyzeKeywordFree = (keyword) =>
 
 
 export const analyzeKeyword = (keyword) => {
-    console.log("🔥 ANALYZE V2");
-    console.log(
-        "🔥 ANALYZE FUNCTION CALLED"
-    );
 
-    console.log(
-        "🔥 TOKEN:",
-        localStorage.getItem("token")
-    );
 
     return request(
         API.seoAnalyze,
