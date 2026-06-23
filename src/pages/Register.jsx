@@ -109,19 +109,14 @@ export default function Register() {
                 );
             }
 
-            if (!data?.token) {
-                throw new Error("Token manquant");
+            if (data?.success) {
+
+                navigate(
+                    `/${currentLang}/login`
+                );
+
+                return;
             }
-
-            localStorage.setItem(
-                "token",
-                data.token
-            );
-
-            navigate(
-                `/${currentLang}/dashboard`
-            );
-
         } catch (err) {
 
             console.error(
