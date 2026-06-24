@@ -31,7 +31,8 @@ import { formatNumber } from "../utils/format";
 const API_URL =
     import.meta.env.VITE_API_URL ||
     "https://seo-tool-api-lo6k.onrender.com/api";
-
+console.log("🔥 KEYWORD ANALYZER BUILD V2");
+console.log("🔥 API URL =", API_URL);
 export default function KeywordAnalyzer() {
 
     const location = useLocation();
