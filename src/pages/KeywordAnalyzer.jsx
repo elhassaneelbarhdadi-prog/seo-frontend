@@ -27,14 +27,19 @@ import {
 
 import { formatNumber } from "../utils/format";
 
+/* ========================= */
+/* API BASE */
+/* ========================= */
 
-const API_URL =
+const RAW_BASE =
     import.meta.env.VITE_API_URL ||
-    "https://seo-tool-api-lo6k.onrender.com/api";
-console.log("🔥 KEYWORD ANALYZER BUILD V2");
-console.log("🔥 API URL =", API_URL);
-export default function KeywordAnalyzer() {
+    "https://seo-tool-api-lo6k.onrender.com";
 
+const API_BASE = RAW_BASE.endsWith("/api")
+    ? RAW_BASE
+    : `${RAW_BASE}/api`;
+
+export default function KeywordAnalyzer() {
     const location = useLocation();
 
     const resultRef = useRef(null);
@@ -44,13 +49,10 @@ export default function KeywordAnalyzer() {
     const queryClient = useQueryClient();
 
     const [showUpgrade, setShowUpgrade] = useState(false);
-
     const [keyword, setKeyword] = useState("");
-
     const [result, setResult] = useState(null);
     const [organicResults, setOrganicResults] = useState([]);
     const [loading, setLoading] = useState(false);
-
     const [error, setError] = useState("");
 
     const { data: usage } = useQuery({
@@ -66,7 +68,6 @@ export default function KeywordAnalyzer() {
         staleTime: 1000 * 60,
         refetchOnWindowFocus: false
     });
-    console.log("HISTORY DATA:", history);
 
     const { data: user } = useQuery({
         queryKey: ["user"],
@@ -75,27 +76,21 @@ export default function KeywordAnalyzer() {
         refetchOnWindowFocus: false
     });
 
-    const isUnlimited =
-        usage?.limit === null;
+    const isUnlimited = usage?.limit === null;
 
     const hasHistory =
         Array.isArray(history) &&
         history.length > 0;
 
     useEffect(() => {
-
         const timer = setTimeout(() => {
-
             inputRef.current?.focus();
-
         }, 100);
 
         return () => clearTimeout(timer);
-
     }, []);
 
     const handleAnalyze = useCallback(async (input) => {
-
         const finalKeyword =
             typeof input === "string"
                 ? input
@@ -110,92 +105,59 @@ export default function KeywordAnalyzer() {
             usage.limit !== null &&
             usage.used >= usage.limit
         ) {
-
             setShowUpgrade(true);
-
             return;
         }
 
         setLoading(true);
-
         setError("");
 
         try {
+            const cleanKeyword = finalKeyword.trim();
 
-            const cleanKeyword =
-                finalKeyword.trim();
-
-            const data =
-                await analyzeKeyword(
-                    cleanKeyword
-                );
+            const data = await analyzeKeyword(cleanKeyword);
 
             /* ========================= */
             /* GOOGLE ORGANIC */
             /* ========================= */
-
             try {
-
                 const organicResponse = await fetch(
-                    `${API_URL}/seo/organic?keyword=${encodeURIComponent(cleanKeyword)}`
+                    `${API_BASE}/seo/organic?keyword=${encodeURIComponent(cleanKeyword)}`
                 );
 
-                const organicData =
-                    await organicResponse.json();
+                const organicData = await organicResponse.json();
 
-                console.log(
-                    "ORGANIC:",
-                    organicData
-                );
+                console.log("ORGANIC:", organicData);
 
                 setOrganicResults(
-                    organicData.organic || []
+                    organicData?.organic || []
                 );
-
-            }
-            catch (err) {
-
-                console.error(
-                    "ORGANIC ERROR:",
-                    err
-                );
-
+            } catch (err) {
+                console.error("ORGANIC ERROR:", err);
+                setOrganicResults([]);
             }
 
             setResult(data);
-
             setKeyword("");
 
             await Promise.all([
-
                 queryClient.invalidateQueries({
                     queryKey: ["usage"]
                 }),
-
                 queryClient.invalidateQueries({
                     queryKey: ["history"]
                 })
-
             ]);
-
         } catch (err) {
-
-            console.error(
-                "ANALYZE ERROR:",
-                err
-            );
+            console.error("ANALYZE ERROR:", err);
 
             setError(
                 err?.message ||
                 "Erreur lors de l'analyse"
             );
-
         } finally {
-
             setLoading(false);
-
         }
-
     }, [
         keyword,
         loading,
@@ -204,7 +166,6 @@ export default function KeywordAnalyzer() {
     ]);
 
     useEffect(() => {
-
         if (autoRunRef.current) {
             return;
         }
@@ -214,13 +175,9 @@ export default function KeywordAnalyzer() {
             location.state?.keyword;
 
         if (autoKeyword && !loading) {
-
             autoRunRef.current = true;
-
             handleAnalyze(autoKeyword);
-
         }
-
     }, [
         location,
         loading,
@@ -228,7 +185,6 @@ export default function KeywordAnalyzer() {
     ]);
 
     useEffect(() => {
-
         if (!result) {
             return;
         }
@@ -237,13 +193,10 @@ export default function KeywordAnalyzer() {
             behavior: "smooth",
             block: "start"
         });
-
     }, [result]);
 
     const handleDeleteKeyword = async (id) => {
-
         try {
-
             await apiDeleteKeyword(id);
 
             queryClient.setQueryData(
@@ -253,20 +206,12 @@ export default function KeywordAnalyzer() {
                         item => item.id !== id
                     )
             );
-
         } catch (err) {
-
-            console.error(
-                "DELETE ERROR:",
-                err
-            );
-
+            console.error("DELETE ERROR:", err);
         }
-
     };
 
     const handleDeleteAll = async () => {
-
         const confirmed = window.confirm(
             "Supprimer tout l'historique ?"
         );
@@ -276,7 +221,6 @@ export default function KeywordAnalyzer() {
         }
 
         try {
-
             await apiDeleteAllKeywords();
 
             queryClient.setQueryData(
@@ -287,20 +231,12 @@ export default function KeywordAnalyzer() {
             await queryClient.invalidateQueries({
                 queryKey: ["usage"]
             });
-
         } catch (err) {
-
-            console.error(
-                "DELETE ALL ERROR:",
-                err
-            );
-
+            console.error("DELETE ALL ERROR:", err);
         }
-
     };
 
     return (
-
         <>
             <Helmet>
                 <title>
@@ -318,45 +254,50 @@ export default function KeywordAnalyzer() {
                 />
             </Helmet>
 
-            <div className="
-                space-y-8
-                w-full
-                max-w-[1400px]
-                mx-auto
-                text-sm
-                px-4
-                pb-10
-            ">
-
+            <div
+                className="
+                    space-y-8
+                    w-full
+                    max-w-[1400px]
+                    mx-auto
+                    text-sm
+                    px-4
+                    pb-10
+                "
+            >
                 {/* HEADER */}
-
-                <div className="
-                    bg-gradient-to-r
-                    from-indigo-600
-                    to-purple-600
-                    text-white
-                    p-6
-                    rounded-3xl
-                    shadow-xl
-                    border
-                    border-white/10
-                    overflow-hidden
-                ">
-
-                    <h1 className="
-                        text-2xl
-                        lg:text-3xl
-                        font-bold
-                        mb-3
-                    ">
+                <div
+                    className="
+                        bg-gradient-to-r
+                        from-indigo-600
+                        to-purple-600
+                        text-white
+                        p-6
+                        rounded-3xl
+                        shadow-xl
+                        border
+                        border-white/10
+                        overflow-hidden
+                    "
+                >
+                    <h1
+                        className="
+                            text-2xl
+                            lg:text-3xl
+                            font-bold
+                            mb-3
+                        "
+                    >
                         🚀 Trouvez une opportunité SEO rentable
                     </h1>
 
-                    <p className="
-                        text-indigo-100
-                        mb-6
-                        max-w-2xl
-                    ">
+                    <p
+                        className="
+                            text-indigo-100
+                            mb-6
+                            max-w-2xl
+                        "
+                    >
                         Analysez vos mots-clés avec IA,
                         découvrez le trafic potentiel,
                         les intentions de recherche,
@@ -364,22 +305,21 @@ export default function KeywordAnalyzer() {
                         meilleures opportunités.
                     </p>
 
-                    <div className="
-                        flex
-                        flex-col
-                        md:flex-row
-                        gap-3
-                    ">
-
+                    <div
+                        className="
+                            flex
+                            flex-col
+                            md:flex-row
+                            gap-3
+                        "
+                    >
                         <input
                             ref={inputRef}
                             value={keyword}
                             onChange={(e) =>
                                 setKeyword(e.target.value)
                             }
-                            placeholder="
-                            Choisir un mot-clé...
-                            "
+                            placeholder="Choisir un mot-clé..."
                             className="
                                 flex-1
                                 h-12
@@ -420,60 +360,50 @@ export default function KeywordAnalyzer() {
                                 shrink-0
                             "
                         >
-
                             {loading
                                 ? "⏳ Analyse..."
                                 : "🚀 Analyser"}
-
                         </button>
-
                     </div>
 
                     {usage && user?.plan === "FREE" && (
-
-                        <p className="
-                            text-center
-                            text-xs
-                            mt-4
-                            opacity-90
-                        ">
-
+                        <p
+                            className="
+                                text-center
+                                text-xs
+                                mt-4
+                                opacity-90
+                            "
+                        >
                             {formatNumber(usage.used)} /{" "}
-
                             {isUnlimited
                                 ? "∞"
                                 : formatNumber(
                                     usage.limit
                                 )}
-
                         </p>
-
                     )}
-
                 </div>
 
                 {/* ERROR */}
-
                 {error && (
-
-                    <div className="
-                        bg-red-100
-                        border
-                        border-red-200
-                        text-red-600
-                        p-4
-                        rounded-3xl
-                        text-sm
-                    ">
+                    <div
+                        className="
+                            bg-red-100
+                            border
+                            border-red-200
+                            text-red-600
+                            p-4
+                            rounded-3xl
+                            text-sm
+                        "
+                    >
                         {error}
                     </div>
-
                 )}
 
                 {/* RESULT */}
-
                 {result && (
-
                     <div
                         ref={resultRef}
                         className="
@@ -481,9 +411,6 @@ export default function KeywordAnalyzer() {
                             w-full
                         "
                     >
-
-                        {/* VERDICT */}
-
                         <div
                             className={`
                                 rounded-3xl
@@ -500,167 +427,143 @@ export default function KeywordAnalyzer() {
                                 }
                             `}
                         >
-
-                            <h3 className="
-                                text-lg
-                                font-bold
-                                mb-3
-                            ">
+                            <h3
+                                className="
+                                    text-lg
+                                    font-bold
+                                    mb-3
+                                "
+                            >
                                 🔥 Verdict SEO
                             </h3>
 
-                            <div className="
-                                flex
-                                justify-between
-                                items-center
-                                gap-4
-                            ">
-
-                                <p className="
-                                    text-4xl
-                                    font-bold
-                                ">
+                            <div
+                                className="
+                                    flex
+                                    justify-between
+                                    items-center
+                                    gap-4
+                                "
+                            >
+                                <p
+                                    className="
+                                        text-4xl
+                                        font-bold
+                                    "
+                                >
                                     {result.scoreFinal}/100
                                 </p>
 
-                                <p className="
-                                    text-xl
-                                    font-bold
-                                    whitespace-nowrap
-                                ">
-
-                                    {result.verdict === "GO" &&
-                                        "🚀 GO"}
-
-                                    {result.verdict === "WAIT" &&
-                                        "⚠️ WAIT"}
-
-                                    {result.verdict === "NO_GO" &&
-                                        "❌ NO GO"}
-
+                                <p
+                                    className="
+                                        text-xl
+                                        font-bold
+                                        whitespace-nowrap
+                                    "
+                                >
+                                    {result.verdict === "GO" && "🚀 GO"}
+                                    {result.verdict === "WAIT" && "⚠️ WAIT"}
+                                    {result.verdict === "NO_GO" && "❌ NO GO"}
                                 </p>
-
                             </div>
-
                         </div>
 
                         <KpiCards result={result} />
-
                         <SeoOverview result={result} />
 
-                        {/* CHARTS */}
-
-                        <div className="
-                            grid
-                            grid-cols-1
-                            md:grid-cols-2
-                            gap-6
-                        ">
-
-                            <div className="
-                                min-w-0
-                                overflow-hidden
-                                bg-white
-                                rounded-3xl
-                                border
-                                border-gray-100
-                                shadow-sm
-                                p-4
-                                transition-all
-                                duration-300
-                                hover:shadow-xl
-                            ">
-                                <KeywordChart
-                                    result={result}
-                                />
+                        <div
+                            className="
+                                grid
+                                grid-cols-1
+                                md:grid-cols-2
+                                gap-6
+                            "
+                        >
+                            <div
+                                className="
+                                    min-w-0
+                                    overflow-hidden
+                                    bg-white
+                                    rounded-3xl
+                                    border
+                                    border-gray-100
+                                    shadow-sm
+                                    p-4
+                                    transition-all
+                                    duration-300
+                                    hover:shadow-xl
+                                "
+                            >
+                                <KeywordChart result={result} />
                             </div>
 
-                            <div className="
-                                min-w-0
-                                overflow-hidden
-                                bg-white
-                                rounded-3xl
-                                border
-                                border-gray-100
-                                shadow-sm
-                                p-4
-                                transition-all
-                                duration-300
-                                hover:shadow-xl
-                            ">
+                            <div
+                                className="
+                                    min-w-0
+                                    overflow-hidden
+                                    bg-white
+                                    rounded-3xl
+                                    border
+                                    border-gray-100
+                                    shadow-sm
+                                    p-4
+                                    transition-all
+                                    duration-300
+                                    hover:shadow-xl
+                                "
+                            >
                                 <SeoGauge
                                     value={result.competition}
                                 />
                             </div>
-
                         </div>
 
-                        {/* SERP + INTENT */}
-
-                        <div className="
-                            grid
-                            grid-cols-1
-                            md:grid-cols-2
-                            gap-6
-                        ">
-
-                            <div className="
-                                min-w-0
-                                overflow-hidden
-                                bg-white
-                                rounded-3xl
-                                border
-                                border-gray-100
-                                shadow-sm
-                                p-4
-                                transition-all
-                                duration-300
-                                hover:shadow-xl
-                            ">
+                        <div
+                            className="
+                                grid
+                                grid-cols-1
+                                md:grid-cols-2
+                                gap-6
+                            "
+                        >
+                            <div
+                                className="
+                                    min-w-0
+                                    overflow-hidden
+                                    bg-white
+                                    rounded-3xl
+                                    border
+                                    border-gray-100
+                                    shadow-sm
+                                    p-4
+                                    transition-all
+                                    duration-300
+                                    hover:shadow-xl
+                                "
+                            >
                                 <div className="space-y-4">
-
-                                    <SerpResults
-                                        serp={result.serp}
-                                    />
-
-                                    {/* ========================= */}
-                                    {/* REAL GOOGLE RESULTS */}
-                                    {/* ========================= */}
+                                    <SerpResults serp={result.serp} />
 
                                     {organicResults.length > 0 && (
-
-                                        <div className="
-            mt-6
-            space-y-4
-        ">
-
-                                            <h3 className="
-                text-lg
-                font-bold
-            ">
+                                        <div className="mt-6 space-y-4">
+                                            <h3 className="text-lg font-bold">
                                                 🔎 Résultats Google réels
                                             </h3>
 
                                             {organicResults.map((item) => (
-
                                                 <div
                                                     key={item.position}
                                                     className="
-                        border
-                        border-gray-200
-                        rounded-2xl
-                        p-4
-                        hover:shadow-lg
-                        transition-all
-                        duration-300
-                    "
+                                                        border
+                                                        border-gray-200
+                                                        rounded-2xl
+                                                        p-4
+                                                        hover:shadow-lg
+                                                        transition-all
+                                                        duration-300
+                                                    "
                                                 >
-
-                                                    <p className="
-                        text-xs
-                        text-gray-400
-                        mb-1
-                    ">
+                                                    <p className="text-xs text-gray-400 mb-1">
                                                         Position #{item.position}
                                                     </p>
 
@@ -669,67 +572,61 @@ export default function KeywordAnalyzer() {
                                                         target="_blank"
                                                         rel="noreferrer"
                                                         className="
-                            text-blue-600
-                            font-semibold
-                            hover:underline
-                            break-all
-                        "
+                                                            text-blue-600
+                                                            font-semibold
+                                                            hover:underline
+                                                            break-all
+                                                        "
                                                     >
                                                         {item.title}
                                                     </a>
 
-                                                    <p className="
-                        text-xs
-                        text-green-600
-                        mt-1
-                        break-all
-                    ">
+                                                    <p className="text-xs text-green-600 mt-1 break-all">
                                                         {item.link}
                                                     </p>
 
-                                                    <p className="
-                        text-sm
-                        text-gray-600
-                        mt-3
-                    ">
+                                                    <p className="text-sm text-gray-600 mt-3">
                                                         {item.snippet}
                                                     </p>
 
                                                     {item.rating && (
-
-                                                        <div className="
-                            flex
-                            gap-3
-                            mt-3
-                            text-sm
-                        ">
-
+                                                        <div className="flex gap-3 mt-3 text-sm">
                                                             <span>
                                                                 ⭐ {item.rating}
                                                             </span>
-
                                                             <span>
                                                                 👥 {item.ratingCount}
                                                             </span>
-
                                                         </div>
-
                                                     )}
-
                                                 </div>
-
                                             ))}
-
                                         </div>
-
                                     )}
-
                                 </div>
                             </div>
 
-                            <div className="
-                                min-w-0
-                                overflow-hidden
+                            <div
+                                className="
+                                    min-w-0
+                                    overflow-hidden
+                                    bg-white
+                                    rounded-3xl
+                                    border
+                                    border-gray-100
+                                    shadow-sm
+                                    p-4
+                                    transition-all
+                                    duration-300
+                                    hover:shadow-xl
+                                "
+                            >
+                                <IntentChart intents={result.intents} />
+                            </div>
+                        </div>
+
+                        <div
+                            className="
                                 bg-white
                                 rounded-3xl
                                 border
@@ -739,94 +636,73 @@ export default function KeywordAnalyzer() {
                                 transition-all
                                 duration-300
                                 hover:shadow-xl
-                            ">
-                                <IntentChart
-                                    intents={result.intents}
-                                />
-                            </div>
-
+                            "
+                        >
+                            <SeoIdeas ideas={result.ideas || []} />
                         </div>
 
-                        <div className="
-                            bg-white
-                            rounded-3xl
-                            border
-                            border-gray-100
-                            shadow-sm
-                            p-4
-                            transition-all
-                            duration-300
-                            hover:shadow-xl
-                        ">
-                            <SeoIdeas
-                                ideas={result.ideas || []}
-                            />
-                        </div>
-
-                        <div className="
-                            bg-white
-                            rounded-3xl
-                            border
-                            border-gray-100
-                            shadow-sm
-                            p-4
-                            transition-all
-                            duration-300
-                            hover:shadow-xl
-                        ">
+                        <div
+                            className="
+                                bg-white
+                                rounded-3xl
+                                border
+                                border-gray-100
+                                shadow-sm
+                                p-4
+                                transition-all
+                                duration-300
+                                hover:shadow-xl
+                            "
+                        >
                             <SEOChat result={result} />
                         </div>
 
-                        <div className="
-                            overflow-hidden
-                            w-full
-                            bg-white
-                            rounded-3xl
-                            border
-                            border-gray-100
-                            shadow-sm
-                            p-4
-                            transition-all
-                            duration-300
-                            hover:shadow-xl
-                        ">
-
+                        <div
+                            className="
+                                overflow-hidden
+                                w-full
+                                bg-white
+                                rounded-3xl
+                                border
+                                border-gray-100
+                                shadow-sm
+                                p-4
+                                transition-all
+                                duration-300
+                                hover:shadow-xl
+                            "
+                        >
                             <EasyNiches
                                 result={result}
                                 onSelect={handleAnalyze}
                             />
-
                         </div>
 
-                        <div className="
-                            bg-white
-                            rounded-3xl
-                            border
-                            border-gray-100
-                            shadow-sm
-                            p-4
-                            transition-all
-                            duration-300
-                            hover:shadow-xl
-                        ">
+                        <div
+                            className="
+                                bg-white
+                                rounded-3xl
+                                border
+                                border-gray-100
+                                shadow-sm
+                                p-4
+                                transition-all
+                                duration-300
+                                hover:shadow-xl
+                            "
+                        >
                             <KeywordSuggestions
                                 suggestions={result.suggestions}
                                 onSelect={handleAnalyze}
                             />
                         </div>
-
                     </div>
-
                 )}
 
                 {/* HISTORY */}
-
                 {hasHistory && (
-
                     <div className="space-y-4">
-
                         <div className="flex justify-end">
-
                             <button
                                 onClick={handleDeleteAll}
                                 className="
@@ -844,42 +720,32 @@ export default function KeywordAnalyzer() {
                             >
                                 🗑 Reset historique
                             </button>
-
                         </div>
 
-                        <div className="
-                            bg-white
-                            rounded-3xl
-                            border
-                            border-gray-100
-                            shadow-sm
-                            p-4
-                        ">
-
+                        <div
+                            className="
+                                bg-white
+                                rounded-3xl
+                                border
+                                border-gray-100
+                                shadow-sm
+                                p-4
+                            "
+                        >
                             <KeywordHistory
                                 history={history}
                                 deleteKeyword={handleDeleteKeyword}
                                 onSelect={handleAnalyze}
                             />
-
                         </div>
-
                     </div>
-
                 )}
-
-                {/* UPGRADE */}
 
                 <UpgradeModal
                     isOpen={showUpgrade}
-                    onClose={() =>
-                        setShowUpgrade(false)
-                    }
+                    onClose={() => setShowUpgrade(false)}
                 />
-
             </div>
         </>
-
     );
-
 }
