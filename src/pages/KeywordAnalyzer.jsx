@@ -25,19 +25,11 @@ import {
     deleteAllKeywords as apiDeleteAllKeywords
 } from "../services/api";
 
+import { API_BASE } from "../config";
 import { formatNumber } from "../utils/format";
 
-/* ========================= */
-/* API BASE */
-/* ========================= */
-
-const RAW_BASE =
-    import.meta.env.VITE_API_URL ||
-    "https://seo-tool-api-lo6k.onrender.com";
-
-const API_BASE = RAW_BASE.endsWith("/api")
-    ? RAW_BASE
-    : `${RAW_BASE}/api`;
+console.log("🔥 KEYWORD ANALYZER BUILD V3");
+console.log("🔥 API BASE =", API_BASE);
 
 export default function KeywordAnalyzer() {
     const location = useLocation();
@@ -69,6 +61,8 @@ export default function KeywordAnalyzer() {
         refetchOnWindowFocus: false
     });
 
+    console.log("HISTORY DATA:", history);
+
     const { data: user } = useQuery({
         queryKey: ["user"],
         queryFn: getMe,
@@ -90,80 +84,88 @@ export default function KeywordAnalyzer() {
         return () => clearTimeout(timer);
     }, []);
 
-    const handleAnalyze = useCallback(async (input) => {
-        const finalKeyword =
-            typeof input === "string"
-                ? input
-                : keyword;
+    const handleAnalyze = useCallback(
+        async (input) => {
+            const finalKeyword =
+                typeof input === "string"
+                    ? input
+                    : keyword;
 
-        if (!finalKeyword?.trim() || loading) {
-            return;
-        }
-
-        if (
-            usage &&
-            usage.limit !== null &&
-            usage.used >= usage.limit
-        ) {
-            setShowUpgrade(true);
-            return;
-        }
-
-        setLoading(true);
-        setError("");
-
-        try {
-            const cleanKeyword = finalKeyword.trim();
-
-            const data = await analyzeKeyword(cleanKeyword);
-
-            /* ========================= */
-            /* GOOGLE ORGANIC */
-            /* ========================= */
-            try {
-                const organicResponse = await fetch(
-                    `${API_BASE}/seo/organic?keyword=${encodeURIComponent(cleanKeyword)}`
-                );
-
-                const organicData = await organicResponse.json();
-
-                console.log("ORGANIC:", organicData);
-
-                setOrganicResults(
-                    organicData?.organic || []
-                );
-            } catch (err) {
-                console.error("ORGANIC ERROR:", err);
-                setOrganicResults([]);
+            if (!finalKeyword?.trim() || loading) {
+                return;
             }
 
-            setResult(data);
-            setKeyword("");
+            if (
+                usage &&
+                usage.limit !== null &&
+                usage.used >= usage.limit
+            ) {
+                setShowUpgrade(true);
+                return;
+            }
 
-            await Promise.all([
-                queryClient.invalidateQueries({
-                    queryKey: ["usage"]
-                }),
-                queryClient.invalidateQueries({
-                    queryKey: ["history"]
-                })
-            ]);
-        } catch (err) {
-            console.error("ANALYZE ERROR:", err);
+            setLoading(true);
+            setError("");
 
-            setError(
-                err?.message ||
-                "Erreur lors de l'analyse"
-            );
-        } finally {
-            setLoading(false);
-        }
-    }, [
-        keyword,
-        loading,
-        usage,
-        queryClient
-    ]);
+            try {
+                const cleanKeyword = finalKeyword.trim();
+
+                const data = await analyzeKeyword(cleanKeyword);
+
+                /* ========================= */
+                /* GOOGLE ORGANIC */
+                /* ========================= */
+                try {
+                    const organicResponse = await fetch(
+                        `${API_BASE}/seo/organic?keyword=${encodeURIComponent(cleanKeyword)}`
+                    );
+
+                    let organicData = null;
+                    try {
+                        organicData = await organicResponse.json();
+                    } catch {
+                        throw new Error("Réponse organic invalide");
+                    }
+
+                    if (!organicResponse.ok) {
+                        throw new Error(
+                            organicData?.error ||
+                            `HTTP ${organicResponse.status}`
+                        );
+                    }
+
+                    console.log("ORGANIC:", organicData);
+
+                    setOrganicResults(organicData.organic || []);
+                } catch (err) {
+                    console.error("ORGANIC ERROR:", err);
+                    setOrganicResults([]);
+                }
+
+                setResult(data);
+                setKeyword("");
+
+                await Promise.all([
+                    queryClient.invalidateQueries({
+                        queryKey: ["usage"]
+                    }),
+                    queryClient.invalidateQueries({
+                        queryKey: ["history"]
+                    })
+                ]);
+            } catch (err) {
+                console.error("ANALYZE ERROR:", err);
+
+                setError(
+                    err?.message ||
+                    "Erreur lors de l'analyse"
+                );
+            } finally {
+                setLoading(false);
+            }
+        },
+        [keyword, loading, usage, queryClient]
+    );
 
     useEffect(() => {
         if (autoRunRef.current) {
@@ -178,11 +180,7 @@ export default function KeywordAnalyzer() {
             autoRunRef.current = true;
             handleAnalyze(autoKeyword);
         }
-    }, [
-        location,
-        loading,
-        handleAnalyze
-    ]);
+    }, [location, loading, handleAnalyze]);
 
     useEffect(() => {
         if (!result) {
@@ -203,7 +201,7 @@ export default function KeywordAnalyzer() {
                 ["history"],
                 (old = []) =>
                     old.filter(
-                        item => item.id !== id
+                        (item) => item.id !== id
                     )
             );
         } catch (err) {
@@ -223,10 +221,7 @@ export default function KeywordAnalyzer() {
         try {
             await apiDeleteAllKeywords();
 
-            queryClient.setQueryData(
-                ["history"],
-                []
-            );
+            queryClient.setQueryData(["history"], []);
 
             await queryClient.invalidateQueries({
                 queryKey: ["usage"]
@@ -256,47 +251,47 @@ export default function KeywordAnalyzer() {
 
             <div
                 className="
-                    space-y-8
-                    w-full
-                    max-w-[1400px]
-                    mx-auto
-                    text-sm
-                    px-4
-                    pb-10
-                "
+                space-y-8
+                w-full
+                max-w-[1400px]
+                mx-auto
+                text-sm
+                px-4
+                pb-10
+            "
             >
                 {/* HEADER */}
                 <div
                     className="
-                        bg-gradient-to-r
-                        from-indigo-600
-                        to-purple-600
-                        text-white
-                        p-6
-                        rounded-3xl
-                        shadow-xl
-                        border
-                        border-white/10
-                        overflow-hidden
-                    "
+                    bg-gradient-to-r
+                    from-indigo-600
+                    to-purple-600
+                    text-white
+                    p-6
+                    rounded-3xl
+                    shadow-xl
+                    border
+                    border-white/10
+                    overflow-hidden
+                "
                 >
                     <h1
                         className="
-                            text-2xl
-                            lg:text-3xl
-                            font-bold
-                            mb-3
-                        "
+                        text-2xl
+                        lg:text-3xl
+                        font-bold
+                        mb-3
+                    "
                     >
                         🚀 Trouvez une opportunité SEO rentable
                     </h1>
 
                     <p
                         className="
-                            text-indigo-100
-                            mb-6
-                            max-w-2xl
-                        "
+                        text-indigo-100
+                        mb-6
+                        max-w-2xl
+                    "
                     >
                         Analysez vos mots-clés avec IA,
                         découvrez le trafic potentiel,
@@ -307,11 +302,11 @@ export default function KeywordAnalyzer() {
 
                     <div
                         className="
-                            flex
-                            flex-col
-                            md:flex-row
-                            gap-3
-                        "
+                        flex
+                        flex-col
+                        md:flex-row
+                        gap-3
+                    "
                     >
                         <input
                             ref={inputRef}
@@ -369,11 +364,11 @@ export default function KeywordAnalyzer() {
                     {usage && user?.plan === "FREE" && (
                         <p
                             className="
-                                text-center
-                                text-xs
-                                mt-4
-                                opacity-90
-                            "
+                            text-center
+                            text-xs
+                            mt-4
+                            opacity-90
+                        "
                         >
                             {formatNumber(usage.used)} /{" "}
                             {isUnlimited
@@ -389,14 +384,14 @@ export default function KeywordAnalyzer() {
                 {error && (
                     <div
                         className="
-                            bg-red-100
-                            border
-                            border-red-200
-                            text-red-600
-                            p-4
-                            rounded-3xl
-                            text-sm
-                        "
+                        bg-red-100
+                        border
+                        border-red-200
+                        text-red-600
+                        p-4
+                        rounded-3xl
+                        text-sm
+                    "
                     >
                         {error}
                     </div>
@@ -411,6 +406,7 @@ export default function KeywordAnalyzer() {
                             w-full
                         "
                     >
+                        {/* VERDICT */}
                         <div
                             className={`
                                 rounded-3xl
@@ -429,41 +425,44 @@ export default function KeywordAnalyzer() {
                         >
                             <h3
                                 className="
-                                    text-lg
-                                    font-bold
-                                    mb-3
-                                "
+                                text-lg
+                                font-bold
+                                mb-3
+                            "
                             >
                                 🔥 Verdict SEO
                             </h3>
 
                             <div
                                 className="
-                                    flex
-                                    justify-between
-                                    items-center
-                                    gap-4
-                                "
+                                flex
+                                justify-between
+                                items-center
+                                gap-4
+                            "
                             >
                                 <p
                                     className="
-                                        text-4xl
-                                        font-bold
-                                    "
+                                    text-4xl
+                                    font-bold
+                                "
                                 >
                                     {result.scoreFinal}/100
                                 </p>
 
                                 <p
                                     className="
-                                        text-xl
-                                        font-bold
-                                        whitespace-nowrap
-                                    "
+                                    text-xl
+                                    font-bold
+                                    whitespace-nowrap
+                                "
                                 >
-                                    {result.verdict === "GO" && "🚀 GO"}
-                                    {result.verdict === "WAIT" && "⚠️ WAIT"}
-                                    {result.verdict === "NO_GO" && "❌ NO GO"}
+                                    {result.verdict === "GO" &&
+                                        "🚀 GO"}
+                                    {result.verdict === "WAIT" &&
+                                        "⚠️ WAIT"}
+                                    {result.verdict === "NO_GO" &&
+                                        "❌ NO GO"}
                                 </p>
                             </div>
                         </div>
@@ -471,46 +470,47 @@ export default function KeywordAnalyzer() {
                         <KpiCards result={result} />
                         <SeoOverview result={result} />
 
+                        {/* CHARTS */}
                         <div
                             className="
-                                grid
-                                grid-cols-1
-                                md:grid-cols-2
-                                gap-6
-                            "
+                            grid
+                            grid-cols-1
+                            md:grid-cols-2
+                            gap-6
+                        "
                         >
                             <div
                                 className="
-                                    min-w-0
-                                    overflow-hidden
-                                    bg-white
-                                    rounded-3xl
-                                    border
-                                    border-gray-100
-                                    shadow-sm
-                                    p-4
-                                    transition-all
-                                    duration-300
-                                    hover:shadow-xl
-                                "
+                                min-w-0
+                                overflow-hidden
+                                bg-white
+                                rounded-3xl
+                                border
+                                border-gray-100
+                                shadow-sm
+                                p-4
+                                transition-all
+                                duration-300
+                                hover:shadow-xl
+                            "
                             >
                                 <KeywordChart result={result} />
                             </div>
 
                             <div
                                 className="
-                                    min-w-0
-                                    overflow-hidden
-                                    bg-white
-                                    rounded-3xl
-                                    border
-                                    border-gray-100
-                                    shadow-sm
-                                    p-4
-                                    transition-all
-                                    duration-300
-                                    hover:shadow-xl
-                                "
+                                min-w-0
+                                overflow-hidden
+                                bg-white
+                                rounded-3xl
+                                border
+                                border-gray-100
+                                shadow-sm
+                                p-4
+                                transition-all
+                                duration-300
+                                hover:shadow-xl
+                            "
                             >
                                 <SeoGauge
                                     value={result.competition}
@@ -518,32 +518,34 @@ export default function KeywordAnalyzer() {
                             </div>
                         </div>
 
+                        {/* SERP + INTENT */}
                         <div
                             className="
-                                grid
-                                grid-cols-1
-                                md:grid-cols-2
-                                gap-6
-                            "
+                            grid
+                            grid-cols-1
+                            md:grid-cols-2
+                            gap-6
+                        "
                         >
                             <div
                                 className="
-                                    min-w-0
-                                    overflow-hidden
-                                    bg-white
-                                    rounded-3xl
-                                    border
-                                    border-gray-100
-                                    shadow-sm
-                                    p-4
-                                    transition-all
-                                    duration-300
-                                    hover:shadow-xl
-                                "
+                                min-w-0
+                                overflow-hidden
+                                bg-white
+                                rounded-3xl
+                                border
+                                border-gray-100
+                                shadow-sm
+                                p-4
+                                transition-all
+                                duration-300
+                                hover:shadow-xl
+                            "
                             >
                                 <div className="space-y-4">
                                     <SerpResults serp={result.serp} />
 
+                                    {/* REAL GOOGLE RESULTS */}
                                     {organicResults.length > 0 && (
                                         <div className="mt-6 space-y-4">
                                             <h3 className="text-lg font-bold">
@@ -554,14 +556,14 @@ export default function KeywordAnalyzer() {
                                                 <div
                                                     key={item.position}
                                                     className="
-                                                        border
-                                                        border-gray-200
-                                                        rounded-2xl
-                                                        p-4
-                                                        hover:shadow-lg
-                                                        transition-all
-                                                        duration-300
-                                                    "
+                        border
+                        border-gray-200
+                        rounded-2xl
+                        p-4
+                        hover:shadow-lg
+                        transition-all
+                        duration-300
+                    "
                                                 >
                                                     <p className="text-xs text-gray-400 mb-1">
                                                         Position #{item.position}
@@ -572,11 +574,11 @@ export default function KeywordAnalyzer() {
                                                         target="_blank"
                                                         rel="noreferrer"
                                                         className="
-                                                            text-blue-600
-                                                            font-semibold
-                                                            hover:underline
-                                                            break-all
-                                                        "
+                            text-blue-600
+                            font-semibold
+                            hover:underline
+                            break-all
+                        "
                                                     >
                                                         {item.title}
                                                     </a>
@@ -608,18 +610,18 @@ export default function KeywordAnalyzer() {
 
                             <div
                                 className="
-                                    min-w-0
-                                    overflow-hidden
-                                    bg-white
-                                    rounded-3xl
-                                    border
-                                    border-gray-100
-                                    shadow-sm
-                                    p-4
-                                    transition-all
-                                    duration-300
-                                    hover:shadow-xl
-                                "
+                                min-w-0
+                                overflow-hidden
+                                bg-white
+                                rounded-3xl
+                                border
+                                border-gray-100
+                                shadow-sm
+                                p-4
+                                transition-all
+                                duration-300
+                                hover:shadow-xl
+                            "
                             >
                                 <IntentChart intents={result.intents} />
                             </div>
@@ -627,50 +629,50 @@ export default function KeywordAnalyzer() {
 
                         <div
                             className="
-                                bg-white
-                                rounded-3xl
-                                border
-                                border-gray-100
-                                shadow-sm
-                                p-4
-                                transition-all
-                                duration-300
-                                hover:shadow-xl
-                            "
+                            bg-white
+                            rounded-3xl
+                            border
+                            border-gray-100
+                            shadow-sm
+                            p-4
+                            transition-all
+                            duration-300
+                            hover:shadow-xl
+                        "
                         >
                             <SeoIdeas ideas={result.ideas || []} />
                         </div>
 
                         <div
                             className="
-                                bg-white
-                                rounded-3xl
-                                border
-                                border-gray-100
-                                shadow-sm
-                                p-4
-                                transition-all
-                                duration-300
-                                hover:shadow-xl
-                            "
+                            bg-white
+                            rounded-3xl
+                            border
+                            border-gray-100
+                            shadow-sm
+                            p-4
+                            transition-all
+                            duration-300
+                            hover:shadow-xl
+                        "
                         >
                             <SEOChat result={result} />
                         </div>
 
                         <div
                             className="
-                                overflow-hidden
-                                w-full
-                                bg-white
-                                rounded-3xl
-                                border
-                                border-gray-100
-                                shadow-sm
-                                p-4
-                                transition-all
-                                duration-300
-                                hover:shadow-xl
-                            "
+                            overflow-hidden
+                            w-full
+                            bg-white
+                            rounded-3xl
+                            border
+                            border-gray-100
+                            shadow-sm
+                            p-4
+                            transition-all
+                            duration-300
+                            hover:shadow-xl
+                        "
                         >
                             <EasyNiches
                                 result={result}
@@ -680,16 +682,16 @@ export default function KeywordAnalyzer() {
 
                         <div
                             className="
-                                bg-white
-                                rounded-3xl
-                                border
-                                border-gray-100
-                                shadow-sm
-                                p-4
-                                transition-all
-                                duration-300
-                                hover:shadow-xl
-                            "
+                            bg-white
+                            rounded-3xl
+                            border
+                            border-gray-100
+                            shadow-sm
+                            p-4
+                            transition-all
+                            duration-300
+                            hover:shadow-xl
+                        "
                         >
                             <KeywordSuggestions
                                 suggestions={result.suggestions}
@@ -724,13 +726,13 @@ export default function KeywordAnalyzer() {
 
                         <div
                             className="
-                                bg-white
-                                rounded-3xl
-                                border
-                                border-gray-100
-                                shadow-sm
-                                p-4
-                            "
+                            bg-white
+                            rounded-3xl
+                            border
+                            border-gray-100
+                            shadow-sm
+                            p-4
+                        "
                         >
                             <KeywordHistory
                                 history={history}
@@ -741,6 +743,7 @@ export default function KeywordAnalyzer() {
                     </div>
                 )}
 
+                {/* UPGRADE */}
                 <UpgradeModal
                     isOpen={showUpgrade}
                     onClose={() => setShowUpgrade(false)}
