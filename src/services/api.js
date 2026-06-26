@@ -1,10 +1,13 @@
 import { API_BASE } from "../config";
+
 /* ========================= */
 /* 🌐 ROUTES */
 /* ========================= */
 
 export const API = {
     seoAnalyze: "/seo/analyze",
+    seoFreeAnalyze: "/seo/free-analyze",
+
     nicheGenerate: "/niche/generate",
     chatSEO: "/chat/seo",
 
@@ -28,7 +31,12 @@ export const API = {
 const request = async (
     url,
     options = {},
-    { isPublic = false, timeout = 10000 } = {}
+    {
+        isPublic = false,
+        timeout = 10000,
+        redirectOn401 = true,
+        redirectOn403 = true
+    } = {}
 ) => {
     console.log("👉 API CALL:", API_BASE + url);
 
@@ -61,16 +69,33 @@ const request = async (
             throw new Error("Invalid JSON response");
         }
 
-        /* 🔒 AUTH HANDLING */
+        /* ========================= */
+        /* AUTH HANDLING */
+        /* ========================= */
+
         if (!isPublic && res.status === 401) {
-            localStorage.removeItem("token");
-            window.location.href = "/fr/login";
-            return;
+            if (redirectOn401) {
+                localStorage.removeItem("token");
+                window.location.href = "/fr/login";
+                return;
+            }
+
+            const error = new Error(data?.error || "Unauthorized");
+            error.status = 401;
+            error.data = data;
+            throw error;
         }
 
         if (!isPublic && res.status === 403) {
-            window.location.href = "/fr/dashboard/pricing";
-            return;
+            if (redirectOn403) {
+                window.location.href = "/fr/dashboard/pricing";
+                return;
+            }
+
+            const error = new Error(data?.error || "Forbidden");
+            error.status = 403;
+            error.data = data;
+            throw error;
         }
 
         if (!res.ok) {
@@ -79,13 +104,13 @@ const request = async (
             );
 
             error.status = res.status;
+            error.data = data;
             throw error;
         }
 
         return data;
 
     } catch (err) {
-
         clearTimeout(timer);
 
         if (err.name === "AbortError") {
@@ -100,30 +125,34 @@ const request = async (
 /* ========================= */
 /* 🚀 SEO */
 /* ========================= */
-export const analyzeKeywordFree = (keyword) =>
+
+export const analyzeKeywordFree = (keyword, guestId) =>
     request(
-        "/seo/free-analyze",
+        API.seoFreeAnalyze,
         {
             method: "POST",
+            headers: {
+                "x-guest-id": guestId
+            },
             body: JSON.stringify({ keyword })
         },
         {
             isPublic: true
         }
     );
-
-
-export const analyzeKeyword = (keyword) => {
-
-
-    return request(
+export const analyzeKeyword = (keyword) =>
+    request(
         API.seoAnalyze,
         {
             method: "POST",
             body: JSON.stringify({ keyword })
+        },
+        {
+            redirectOn401: false,
+            redirectOn403: false
         }
     );
-};
+
 export const deleteKeyword = async (id) => {
     return request(`/keyword/${id}`, {
         method: "DELETE"
@@ -134,18 +163,21 @@ export const deleteKeyword = async (id) => {
 /* 🧠 NICHES */
 /* ========================= */
 
-// 🔥 FIX TIMEOUT
 export const getNichesAI = (
     keyword,
     options = {}
 ) =>
-    request(API.nicheGenerate, {
-        method: "POST",
-        body: JSON.stringify({ keyword }),
-        signal: options.signal
-    }, {
-        timeout: 30000
-    });
+    request(
+        API.nicheGenerate,
+        {
+            method: "POST",
+            body: JSON.stringify({ keyword }),
+            signal: options.signal
+        },
+        {
+            timeout: 30000
+        }
+    );
 
 /* ========================= */
 /* 🤖 CHAT */
@@ -176,16 +208,24 @@ export const getKeywordUsage = () =>
 /* ========================= */
 
 export const login = (body) =>
-    request(API.login, {
-        method: "POST",
-        body: JSON.stringify(body)
-    }, { isPublic: true });
+    request(
+        API.login,
+        {
+            method: "POST",
+            body: JSON.stringify(body)
+        },
+        { isPublic: true }
+    );
 
 export const register = (body) =>
-    request(API.register, {
-        method: "POST",
-        body: JSON.stringify(body)
-    }, { isPublic: true });
+    request(
+        API.register,
+        {
+            method: "POST",
+            body: JSON.stringify(body)
+        },
+        { isPublic: true }
+    );
 
 export const getMe = () =>
     request(API.me);
