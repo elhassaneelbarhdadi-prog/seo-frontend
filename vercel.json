@@ -2,10 +2,14 @@
     "$schema": "https://openapi.vercel.sh/vercel.json",
     "routes": [
         {
+            "src": "/sitemap.xml",
+            "dest": "https://seo-tool-api-l06k.onrender.com/sitemap.xml"
+        },
+        {
             "handle": "filesystem"
         },
         {
-            "src": "/.*",
+            "src": "/(.*)",
             "dest": "/index.html"
         }
     ]
