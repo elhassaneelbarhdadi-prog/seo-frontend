@@ -242,6 +242,13 @@ export default function App() {
             element={<ProjectPage />}
           />
 
+          {/* ANNUAIRE PUBLIC */}
+          <Route
+            path="/:lang/annuaire"
+            element={<AnnuairePage />}
+          />
+
+          {/* FICHE ANNUAIRE */}
           <Route
             path="/:lang/annuaire/:slug"
             element={<AnnuaireWrapper />}
