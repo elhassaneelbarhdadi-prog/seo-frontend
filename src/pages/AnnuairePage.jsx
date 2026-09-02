@@ -22,6 +22,129 @@ const cleanKeyword = (str = "") => {
 const capitalize = (str) =>
     str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
 
+
+/* ========================= */
+/* 🧹 SEO CONTENT RENDERER */
+/* ========================= */
+
+/*
+ * Le backend peut retourner :
+ * - du HTML (<h2>, <p>, etc.)
+ * - du Markdown généré par l'IA (#, ##, ###, **gras**)
+ *
+ * Cette fonction transforme les deux formats en HTML propre.
+ */
+const escapeHtml = (str = "") =>
+    String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+const sanitizeHtml = (html = "") =>
+    String(html)
+        .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+        .replace(/\son\w+\s*=\s*(['"]).*?\1/gi, "")
+        .replace(/\son\w+\s*=\s*[^\s>]+/gi, "")
+        .replace(/javascript\s*:/gi, "");
+
+const renderSeoContent = (rawContent = "") => {
+    let content = String(rawContent || "").trim();
+
+    if (!content) {
+        return "";
+    }
+
+    /*
+     * Certains contenus enregistrés peuvent contenir les caractères
+     * littéraux "\n". On les transforme en vrais retours à la ligne.
+     */
+    content = content.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n");
+
+    /*
+     * Si le backend fournit déjà du HTML, on le conserve.
+     * On supprime uniquement les éléments dangereux évidents.
+     */
+    const looksLikeHtml = /<\s*(h[1-6]|p|div|section|article|ul|ol|li|strong|em|br)\b/i.test(
+        content
+    );
+
+    if (looksLikeHtml) {
+        return sanitizeHtml(content);
+    }
+
+    /*
+     * Sinon, conversion Markdown -> HTML.
+     *
+     * La page possède déjà son H1 principal "mot-clé à ville".
+     * Les éventuels "#" générés par l'IA deviennent donc des H2
+     * pour éviter plusieurs H1 sur la même page.
+     */
+    content = escapeHtml(content);
+
+    // Sépare les titres même lorsqu'ils ont été générés sur la même ligne.
+    content = content.replace(/\s+(#{1,3})\s+/g, "\n$1 ");
+
+    const lines = content.split("\n");
+    const blocks = [];
+    let paragraph = [];
+
+    const flushParagraph = () => {
+        if (!paragraph.length) return;
+
+        const value = paragraph
+            .join(" ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        if (value) {
+            blocks.push(`<p>${value}</p>`);
+        }
+
+        paragraph = [];
+    };
+
+    for (const line of lines) {
+        const current = line.trim();
+
+        if (!current) {
+            flushParagraph();
+            continue;
+        }
+
+        const h3 = current.match(/^###\s+(.+)$/);
+        const h2 = current.match(/^##\s+(.+)$/);
+        const h1 = current.match(/^#\s+(.+)$/);
+
+        if (h3) {
+            flushParagraph();
+            blocks.push(`<h3>${h3[1].trim()}</h3>`);
+            continue;
+        }
+
+        if (h2) {
+            flushParagraph();
+            blocks.push(`<h2>${h2[1].trim()}</h2>`);
+            continue;
+        }
+
+        if (h1) {
+            flushParagraph();
+            blocks.push(`<h2>${h1[1].trim()}</h2>`);
+            continue;
+        }
+
+        paragraph.push(
+            current.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        );
+    }
+
+    flushParagraph();
+
+    return blocks.join("\n");
+};
+
 /* ========================= */
 /* 📁 ANNUAIRE PAGE */
 /* ========================= */
@@ -514,7 +637,7 @@ export default function AnnuairePage() {
                         mb-4
                     "
                 >
-                    📁 Annuaire SEO des entreprises
+                    {keywordLabel} à {cityLabel}
                 </h1>
 
                 <p
@@ -552,12 +675,10 @@ export default function AnnuairePage() {
                         text-gray-700
                         mb-6
                         space-y-4
+                        leading-7
                     "
                     dangerouslySetInnerHTML={{
-                        __html: seoPage.content.replace(
-                            /<script.*?>.*?<\/script>/gi,
-                            ""
-                        )
+                        __html: renderSeoContent(seoPage.content)
                     }}
                 />
             ) : (
