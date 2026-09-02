@@ -22,6 +22,17 @@ const cleanKeyword = (str = "") => {
 const capitalize = (str) =>
     str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
 
+/* ========================= */
+/* 🔗 CREATE URL SLUG */
+/* ========================= */
+const toSlug = (str = "") =>
+    String(str)
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
 
 /* ========================= */
 /* 🧹 SEO CONTENT RENDERER */
@@ -514,19 +525,35 @@ export default function AnnuairePage() {
                                     "
                                 >
                                     <h3 className="font-bold text-xl mb-2">
-                                        {p.name ||
-                                            "Entreprise"}
+                                        <Link
+                                            to={`/${lang}/annuaire/${toSlug(p.keyword)}-${toSlug(p.city)}`}
+                                            className="text-indigo-700 hover:underline"
+                                        >
+                                            {p.name || "Entreprise"}
+                                        </Link>
                                     </h3>
 
                                     {p.keyword && (
                                         <p className="text-sm text-indigo-600 mb-2">
-                                            🔎 {p.keyword}
+                                            🔎{" "}
+                                            <Link
+                                                to={`/${lang}/annuaire/${toSlug(p.keyword)}-${toSlug(p.city)}`}
+                                                className="hover:underline"
+                                            >
+                                                {p.keyword}
+                                            </Link>
                                         </p>
                                     )}
 
                                     {p.city && (
                                         <p className="text-sm text-gray-500 mb-3">
-                                            📍 {p.city}
+                                            📍{" "}
+                                            <Link
+                                                to={`/${lang}/annuaire/${toSlug(p.keyword)}-${toSlug(p.city)}`}
+                                                className="hover:underline"
+                                            >
+                                                {p.city}
+                                            </Link>
                                         </p>
                                     )}
 
@@ -760,16 +787,33 @@ export default function AnnuairePage() {
                             "
                         >
                             <h3 className="font-semibold text-lg">
-                                {p.name}
+                                <Link
+                                    to={`/${lang}/annuaire/${toSlug(p.keyword)}-${toSlug(p.city)}`}
+                                    className="text-indigo-700 hover:underline"
+                                >
+                                    {p.name}
+                                </Link>
                             </h3>
 
                             <p className="text-sm text-gray-500">
-                                📍 {p.city}
+                                📍{" "}
+                                <Link
+                                    to={`/${lang}/annuaire/${toSlug(p.keyword)}-${toSlug(p.city)}`}
+                                    className="hover:underline"
+                                >
+                                    {p.city}
+                                </Link>
                             </p>
 
                             {p.keyword && (
                                 <p className="text-sm text-indigo-600">
-                                    🔎 {p.keyword}
+                                    🔎{" "}
+                                    <Link
+                                        to={`/${lang}/annuaire/${toSlug(p.keyword)}-${toSlug(p.city)}`}
+                                        className="hover:underline"
+                                    >
+                                        {p.keyword}
+                                    </Link>
                                 </p>
                             )}
 
