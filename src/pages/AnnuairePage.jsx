@@ -6,6 +6,7 @@ import { API_BASE } from "../config";
 /* ========================= */
 /* 🔥 CLEAN KEYWORD */
 /* ========================= */
+
 const cleanKeyword = (str = "") => {
     return str
         .toLowerCase()
@@ -19,12 +20,16 @@ const cleanKeyword = (str = "") => {
 /* ========================= */
 /* 🔤 FORMAT */
 /* ========================= */
+
 const capitalize = (str) =>
-    str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
+    str
+        ? str.charAt(0).toUpperCase() + str.slice(1)
+        : "";
 
 /* ========================= */
 /* 🔗 CREATE URL SLUG */
 /* ========================= */
+
 const toSlug = (str = "") =>
     String(str)
         .toLowerCase()
@@ -33,18 +38,20 @@ const toSlug = (str = "") =>
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "");
 
-
 /* ========================= */
 /* 🧹 SEO CONTENT RENDERER */
 /* ========================= */
 
 /*
  * Le backend peut retourner :
- * - du HTML (<h2>, <p>, etc.)
- * - du Markdown généré par l'IA (#, ##, ###, **gras**)
+ * - du HTML
+ * - du Markdown généré par l'IA
+ *   (#, ##, ###, **gras**, listes)
  *
- * Cette fonction transforme les deux formats en HTML propre.
+ * Cette fonction transforme le contenu
+ * en HTML propre et sécurisé.
  */
+
 const escapeHtml = (str = "") =>
     String(str)
         .replace(/&/g, "&amp;")
@@ -55,10 +62,22 @@ const escapeHtml = (str = "") =>
 
 const sanitizeHtml = (html = "") =>
     String(html)
-        .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
-        .replace(/\son\w+\s*=\s*(['"]).*?\1/gi, "")
-        .replace(/\son\w+\s*=\s*[^\s>]+/gi, "")
-        .replace(/javascript\s*:/gi, "");
+        .replace(
+            /<script\b[^>]*>[\s\S]*?<\/script>/gi,
+            ""
+        )
+        .replace(
+            /\son\w+\s*=\s*(['"]).*?\1/gi,
+            ""
+        )
+        .replace(
+            /\son\w+\s*=\s*[^\s>]+/gi,
+            ""
+        )
+        .replace(
+            /javascript\s*:/gi,
+            ""
+        );
 
 const renderSeoContent = (rawContent = "") => {
     let content = String(rawContent || "").trim();
@@ -68,90 +87,305 @@ const renderSeoContent = (rawContent = "") => {
     }
 
     /*
-     * Certains contenus enregistrés peuvent contenir les caractères
-     * littéraux "\n". On les transforme en vrais retours à la ligne.
+     * =========================
+     * NORMALISATION MARKDOWN
+     * =========================
+     *
+     * Corrige les caractères d'échappement
+     * parfois présents dans les contenus.
+     *
+     * Exemple :
+     * \*\*texte\*\*
+     * devient :
+     * **texte**
      */
-    content = content.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n");
+
+    content = content.replace(
+        /\\+(?=[*_#])/g,
+        ""
+    );
 
     /*
-     * Si le backend fournit déjà du HTML, on le conserve.
-     * On supprime uniquement les éléments dangereux évidents.
+     * Transforme les retours à la ligne
+     * enregistrés littéralement.
      */
-    const looksLikeHtml = /<\s*(h[1-6]|p|div|section|article|ul|ol|li|strong|em|br)\b/i.test(
-        content
-    );
+    content = content
+        .replace(/\\r\\n/g, "\n")
+        .replace(/\\n/g, "\n");
+
+    /*
+     * =========================
+     * HTML EXISTANT
+     * =========================
+     */
+
+    const looksLikeHtml =
+        /<\s*(h[1-6]|p|div|section|article|ul|ol|li|strong|em|br)\b/i.test(
+            content
+        );
 
     if (looksLikeHtml) {
         return sanitizeHtml(content);
     }
 
     /*
-     * Sinon, conversion Markdown -> HTML.
-     *
-     * La page possède déjà son H1 principal "mot-clé à ville".
-     * Les éventuels "#" générés par l'IA deviennent donc des H2
-     * pour éviter plusieurs H1 sur la même page.
+     * =========================
+     * ESCAPE HTML
+     * =========================
      */
+
     content = escapeHtml(content);
 
-    // Sépare les titres même lorsqu'ils ont été générés sur la même ligne.
-    content = content.replace(/\s+(#{1,3})\s+/g, "\n$1 ");
+    /*
+     * =========================
+     * SÉPARATION DES TITRES
+     * =========================
+     */
+
+    content = content.replace(
+        /\s+(#{1,3})\s+/g,
+        "\n$1 "
+    );
 
     const lines = content.split("\n");
+
     const blocks = [];
+
     let paragraph = [];
+    let unorderedList = [];
+    let orderedList = [];
+
+    /*
+     * =========================
+     * FORMATAGE INLINE
+     * =========================
+     */
+
+    const formatInline = (text = "") => {
+        return text
+            .replace(
+                /\*\*(.+?)\*\*/g,
+                "<strong>$1</strong>"
+            )
+            .replace(
+                /__(.+?)__/g,
+                "<strong>$1</strong>"
+            );
+    };
+
+    /*
+     * =========================
+     * FLUSH PARAGRAPHE
+     * =========================
+     */
 
     const flushParagraph = () => {
-        if (!paragraph.length) return;
+        if (!paragraph.length) {
+            return;
+        }
 
-        const value = paragraph
-            .join(" ")
-            .replace(/\s+/g, " ")
-            .trim();
+        const value =
+            paragraph
+                .join(" ")
+                .replace(/\s+/g, " ")
+                .trim();
 
         if (value) {
-            blocks.push(`<p>${value}</p>`);
+            blocks.push(
+                `<p>${formatInline(value)}</p>`
+            );
         }
 
         paragraph = [];
     };
 
+    /*
+     * =========================
+     * FLUSH LISTE À PUCES
+     * =========================
+     */
+
+    const flushUnorderedList = () => {
+        if (!unorderedList.length) {
+            return;
+        }
+
+        blocks.push(
+            `<ul class="list-disc pl-6 space-y-1">${unorderedList
+                .map(
+                    (item) =>
+                        `<li>${formatInline(item)}</li>`
+                )
+                .join("")}</ul>`
+        );
+
+        unorderedList = [];
+    };
+
+    /*
+     * =========================
+     * FLUSH LISTE NUMÉROTÉE
+     * =========================
+     */
+
+    const flushOrderedList = () => {
+        if (!orderedList.length) {
+            return;
+        }
+
+        blocks.push(
+            `<ol class="list-decimal pl-6 space-y-1">${orderedList
+                .map(
+                    (item) =>
+                        `<li>${formatInline(item)}</li>`
+                )
+                .join("")}</ol>`
+        );
+
+        orderedList = [];
+    };
+
+    const flushLists = () => {
+        flushUnorderedList();
+        flushOrderedList();
+    };
+
+    /*
+     * =========================
+     * PARCOURS DU CONTENU
+     * =========================
+     */
+
     for (const line of lines) {
         const current = line.trim();
 
+        /*
+         * Ligne vide
+         */
         if (!current) {
             flushParagraph();
+            flushLists();
             continue;
         }
 
-        const h3 = current.match(/^###\s+(.+)$/);
-        const h2 = current.match(/^##\s+(.+)$/);
-        const h1 = current.match(/^#\s+(.+)$/);
+        /*
+         * =========================
+         * LISTE À PUCES
+         * =========================
+         */
+
+        const unorderedMatch =
+            current.match(/^[-*]\s+(.+)$/);
+
+        if (unorderedMatch) {
+            flushParagraph();
+            flushOrderedList();
+
+            unorderedList.push(
+                unorderedMatch[1].trim()
+            );
+
+            continue;
+        }
+
+        /*
+         * =========================
+         * LISTE NUMÉROTÉE
+         * =========================
+         */
+
+        const orderedMatch =
+            current.match(/^\d+\.\s+(.+)$/);
+
+        if (orderedMatch) {
+            flushParagraph();
+            flushUnorderedList();
+
+            orderedList.push(
+                orderedMatch[1].trim()
+            );
+
+            continue;
+        }
+
+        /*
+         * =========================
+         * TITRES
+         * =========================
+         */
+
+        const h3 =
+            current.match(/^###\s+(.+)$/);
+
+        const h2 =
+            current.match(/^##\s+(.+)$/);
+
+        const h1 =
+            current.match(/^#\s+(.+)$/);
 
         if (h3) {
             flushParagraph();
-            blocks.push(`<h3>${h3[1].trim()}</h3>`);
+            flushLists();
+
+            blocks.push(
+                `<h3>${formatInline(
+                    h3[1].trim()
+                )}</h3>`
+            );
+
             continue;
         }
 
         if (h2) {
             flushParagraph();
-            blocks.push(`<h2>${h2[1].trim()}</h2>`);
+            flushLists();
+
+            blocks.push(
+                `<h2>${formatInline(
+                    h2[1].trim()
+                )}</h2>`
+            );
+
             continue;
         }
 
         if (h1) {
             flushParagraph();
-            blocks.push(`<h2>${h1[1].trim()}</h2>`);
+            flushLists();
+
+            /*
+             * Le H1 principal est déjà présent
+             * dans la page.
+             *
+             * Un éventuel H1 généré par l'IA
+             * devient donc un H2.
+             */
+            blocks.push(
+                `<h2>${formatInline(
+                    h1[1].trim()
+                )}</h2>`
+            );
+
             continue;
         }
 
-        paragraph.push(
-            current.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-        );
+        /*
+         * =========================
+         * PARAGRAPHE
+         * =========================
+         */
+
+        paragraph.push(current);
     }
 
+    /*
+     * =========================
+     * FIN
+     * =========================
+     */
+
     flushParagraph();
+    flushLists();
 
     return blocks.join("\n");
 };
@@ -159,24 +393,39 @@ const renderSeoContent = (rawContent = "") => {
 /* ========================= */
 /* 📁 ANNUAIRE PAGE */
 /* ========================= */
-export default function AnnuairePage() {
-    const { slug, lang = "fr" } = useParams();
 
-    const [profiles, setProfiles] = useState([]);
-    const [seoPage, setSeoPage] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+export default function AnnuairePage() {
+    const {
+        slug,
+        lang = "fr"
+    } = useParams();
+
+    const [profiles, setProfiles] =
+        useState([]);
+
+    const [seoPage, setSeoPage] =
+        useState(null);
+
+    const [loading, setLoading] =
+        useState(true);
+
+    const [error, setError] =
+        useState("");
 
     /* ========================= */
     /* 🔐 PARSE SLUG */
     /* ========================= */
-    const { keyword, city } = useMemo(() => {
+
+    const {
+        keyword,
+        city
+    } = useMemo(() => {
+
         /*
-         * IMPORTANT :
          * /fr/annuaire n'a pas de slug.
-         * Dans ce cas, ce n'est PAS une page invalide.
-         * C'est la page d'accueil publique de l'annuaire.
+         * C'est la page d'accueil publique.
          */
+
         if (!slug) {
             return {
                 keyword: "",
@@ -184,9 +433,10 @@ export default function AnnuairePage() {
             };
         }
 
-        const parts = slug
-            .split("-")
-            .filter(Boolean);
+        const parts =
+            slug
+                .split("-")
+                .filter(Boolean);
 
         if (parts.length < 2) {
             return {
@@ -196,20 +446,37 @@ export default function AnnuairePage() {
         }
 
         return {
-            keyword: cleanKeyword(parts.slice(0, -1).join(" ")),
-            city: parts.slice(-1).join("-")
+            keyword:
+                cleanKeyword(
+                    parts
+                        .slice(0, -1)
+                        .join(" ")
+                ),
+
+            city:
+                parts
+                    .slice(-1)
+                    .join("-")
         };
     }, [slug]);
 
-    const isDirectoryHome = !slug;
-    const isInvalidSlug = Boolean(slug) && (!keyword || !city);
+    const isDirectoryHome =
+        !slug;
 
-    const keywordLabel = capitalize(keyword);
-    const cityLabel = capitalize(city);
+    const isInvalidSlug =
+        Boolean(slug) &&
+        (!keyword || !city);
+
+    const keywordLabel =
+        capitalize(keyword);
+
+    const cityLabel =
+        capitalize(city);
 
     /* ========================= */
     /* 🔥 LOAD DATA */
     /* ========================= */
+
     useEffect(() => {
         let cancelled = false;
 
@@ -220,18 +487,22 @@ export default function AnnuairePage() {
 
                 /*
                  * =========================
-                 * PAGE D'ACCUEIL ANNuaire
+                 * PAGE D'ACCUEIL ANNUAIRE
                  * =========================
                  */
-                if (isDirectoryHome) {
-                    const profilesRes = await fetch(
-                        `${API_BASE}/business-profile`
-                    );
 
-                    let profilesData = null;
+                if (isDirectoryHome) {
+                    const profilesRes =
+                        await fetch(
+                            `${API_BASE}/business-profile`
+                        );
+
+                    let profilesData =
+                        null;
 
                     try {
-                        profilesData = await profilesRes.json();
+                        profilesData =
+                            await profilesRes.json();
                     } catch {
                         throw new Error(
                             "Réponse business invalide"
@@ -245,10 +516,18 @@ export default function AnnuairePage() {
                         );
                     }
 
-                    if (cancelled) return;
+                    if (cancelled) {
+                        return;
+                    }
 
-                    if (Array.isArray(profilesData?.businesses)) {
-                        setProfiles(profilesData.businesses);
+                    if (
+                        Array.isArray(
+                            profilesData?.businesses
+                        )
+                    ) {
+                        setProfiles(
+                            profilesData.businesses
+                        );
                     } else {
                         setProfiles([]);
                     }
@@ -263,6 +542,7 @@ export default function AnnuairePage() {
                  * SLUG INVALIDE
                  * =========================
                  */
+
                 if (isInvalidSlug) {
                     return;
                 }
@@ -272,18 +552,29 @@ export default function AnnuairePage() {
                  * PAGE SEO MÉTIER + VILLE
                  * =========================
                  */
-                const [seoRes, profilesRes] = await Promise.all([
-                    fetch(
-                        `${API_BASE}/seo-page?slug=${encodeURIComponent(slug)}`
-                    ),
-                    fetch(`${API_BASE}/business-profile`)
-                ]);
+
+                const [
+                    seoRes,
+                    profilesRes
+                ] =
+                    await Promise.all([
+                        fetch(
+                            `${API_BASE}/seo-page?slug=${encodeURIComponent(
+                                slug
+                            )}`
+                        ),
+
+                        fetch(
+                            `${API_BASE}/business-profile`
+                        )
+                    ]);
 
                 let seoData = null;
                 let profilesData = null;
 
                 try {
-                    seoData = await seoRes.json();
+                    seoData =
+                        await seoRes.json();
                 } catch {
                     throw new Error(
                         "Réponse SEO invalide"
@@ -291,7 +582,8 @@ export default function AnnuairePage() {
                 }
 
                 try {
-                    profilesData = await profilesRes.json();
+                    profilesData =
+                        await profilesRes.json();
                 } catch {
                     throw new Error(
                         "Réponse business invalide"
@@ -312,26 +604,53 @@ export default function AnnuairePage() {
                     );
                 }
 
-                if (cancelled) return;
+                if (cancelled) {
+                    return;
+                }
 
                 setSeoPage(seoData);
 
-                if (Array.isArray(profilesData?.businesses)) {
-                    const filtered = profilesData.businesses.filter((p) => {
-                        const k = cleanKeyword(p?.keyword || "");
-                        const c = (p?.city || "").toLowerCase();
+                if (
+                    Array.isArray(
+                        profilesData?.businesses
+                    )
+                ) {
+                    const filtered =
+                        profilesData.businesses.filter(
+                            (p) => {
+                                const k =
+                                    cleanKeyword(
+                                        p?.keyword || ""
+                                    );
 
-                        return (
-                            (k.includes(keyword) ||
-                                keyword.includes(k)) &&
-                            c.includes(city.toLowerCase())
+                                const c =
+                                    (
+                                        p?.city || ""
+                                    ).toLowerCase();
+
+                                return (
+                                    (
+                                        k.includes(
+                                            keyword
+                                        ) ||
+                                        keyword.includes(
+                                            k
+                                        )
+                                    ) &&
+                                    c.includes(
+                                        city.toLowerCase()
+                                    )
+                                );
+                            }
                         );
-                    });
 
-                    setProfiles(filtered);
+                    setProfiles(
+                        filtered
+                    );
                 } else {
                     setProfiles([]);
                 }
+
             } catch (err) {
                 console.error(
                     "ANNUAIRE PAGE ERROR:",
@@ -344,6 +663,7 @@ export default function AnnuairePage() {
                         "Erreur de chargement"
                     );
                 }
+
             } finally {
                 if (!cancelled) {
                     setLoading(false);
@@ -367,6 +687,7 @@ export default function AnnuairePage() {
     /* ========================= */
     /* ❌ SLUG INVALIDE */
     /* ========================= */
+
     if (isInvalidSlug) {
         return (
             <>
@@ -405,9 +726,11 @@ export default function AnnuairePage() {
     /* ========================= */
     /* 🏠 PAGE D'ACCUEIL ANNUAIRE */
     /* ========================= */
+
     if (isDirectoryHome) {
         return (
             <div className="max-w-6xl mx-auto p-6 lg:p-10">
+
                 <Helmet>
                     <title>
                         Annuaire SEO des entreprises | Référencia SEO
@@ -422,7 +745,9 @@ export default function AnnuairePage() {
                 {/* ========================= */}
                 {/* HERO */}
                 {/* ========================= */}
+
                 <div className="text-center mb-12">
+
                     <h1 className="text-4xl lg:text-5xl font-black mb-5">
                         📁 Annuaire SEO des entreprises
                     </h1>
@@ -433,6 +758,7 @@ export default function AnnuairePage() {
                     </p>
 
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
+
                         <Link
                             to={`/${lang}/register`}
                             className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90"
@@ -446,12 +772,14 @@ export default function AnnuairePage() {
                         >
                             ← Retour à Référencia SEO
                         </Link>
+
                     </div>
                 </div>
 
                 {/* ========================= */}
                 {/* ERROR */}
                 {/* ========================= */}
+
                 {error && (
                     <div
                         className="
@@ -471,8 +799,11 @@ export default function AnnuairePage() {
                 {/* ========================= */}
                 {/* LISTE ENTREPRISES */}
                 {/* ========================= */}
+
                 <section>
+
                     <div className="mb-6">
+
                         <h2 className="text-2xl font-bold">
                             🔝 Professionnels référencés
                         </h2>
@@ -481,15 +812,19 @@ export default function AnnuairePage() {
                             Découvrez les entreprises présentes dans
                             notre annuaire.
                         </p>
+
                     </div>
 
                     {loading ? (
+
                         <div className="text-center py-10">
                             <p className="text-gray-500">
                                 Chargement de l'annuaire...
                             </p>
                         </div>
+
                     ) : profiles.length === 0 ? (
+
                         <div
                             className="
                                 bg-gray-100
@@ -498,6 +833,7 @@ export default function AnnuairePage() {
                                 text-center
                             "
                         >
+
                             <p className="text-gray-600 mb-4">
                                 Aucun professionnel n'est encore
                                 référencé dans l'annuaire.
@@ -509,12 +845,19 @@ export default function AnnuairePage() {
                             >
                                 🚀 Référencer mon entreprise
                             </Link>
+
                         </div>
+
                     ) : (
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
                             {profiles.map((p, i) => (
+
                                 <div
-                                    key={p.id || i}
+                                    key={
+                                        p.id || i
+                                    }
                                     className="
                                         bg-white
                                         p-6
@@ -524,53 +867,82 @@ export default function AnnuairePage() {
                                         border-gray-100
                                     "
                                 >
+
                                     <h3 className="font-bold text-xl mb-2">
+
                                         <Link
-                                            to={`/${lang}/annuaire/${toSlug(p.keyword)}-${toSlug(p.city)}`}
+                                            to={`/${lang}/annuaire/${toSlug(
+                                                p.keyword
+                                            )}-${toSlug(
+                                                p.city
+                                            )}`}
                                             className="text-indigo-700 hover:underline"
                                         >
                                             {p.name || "Entreprise"}
                                         </Link>
+
                                     </h3>
 
                                     {p.keyword && (
+
                                         <p className="text-sm text-indigo-600 mb-2">
                                             🔎{" "}
+
                                             <Link
-                                                to={`/${lang}/annuaire/${toSlug(p.keyword)}-${toSlug(p.city)}`}
+                                                to={`/${lang}/annuaire/${toSlug(
+                                                    p.keyword
+                                                )}-${toSlug(
+                                                    p.city
+                                                )}`}
                                                 className="hover:underline"
                                             >
                                                 {p.keyword}
                                             </Link>
                                         </p>
+
                                     )}
 
                                     {p.city && (
+
                                         <p className="text-sm text-gray-500 mb-3">
                                             📍{" "}
+
                                             <Link
-                                                to={`/${lang}/annuaire/${toSlug(p.keyword)}-${toSlug(p.city)}`}
+                                                to={`/${lang}/annuaire/${toSlug(
+                                                    p.keyword
+                                                )}-${toSlug(
+                                                    p.city
+                                                )}`}
                                                 className="hover:underline"
                                             >
                                                 {p.city}
                                             </Link>
                                         </p>
+
                                     )}
 
                                     {p.description && (
+
                                         <p className="text-gray-700">
                                             {p.description}
                                         </p>
+
                                     )}
+
                                 </div>
+
                             ))}
+
                         </div>
+
                     )}
+
                 </section>
 
                 {/* ========================= */}
                 {/* CTA */}
                 {/* ========================= */}
+
                 <div
                     className="
                         bg-indigo-50
@@ -580,6 +952,7 @@ export default function AnnuairePage() {
                         text-center
                     "
                 >
+
                     <h2 className="text-2xl font-bold mb-3">
                         🚀 Développez votre visibilité sur Google
                     </h2>
@@ -604,7 +977,9 @@ export default function AnnuairePage() {
                     >
                         S'inscrire gratuitement
                     </Link>
+
                 </div>
+
             </div>
         );
     }
@@ -624,19 +999,26 @@ export default function AnnuairePage() {
 
     return (
         <div className="max-w-4xl mx-auto p-6 lg:p-10">
+
             <Helmet>
-                <title>{title}</title>
+
+                <title>
+                    {title}
+                </title>
 
                 <meta
                     name="description"
                     content={description}
                 />
+
             </Helmet>
 
             {/* ========================= */}
             {/* ERROR */}
             {/* ========================= */}
+
             {error && (
+
                 <div
                     className="
                         bg-red-50
@@ -650,12 +1032,15 @@ export default function AnnuairePage() {
                 >
                     {error}
                 </div>
+
             )}
 
             {/* ========================= */}
             {/* HEADER */}
             {/* ========================= */}
+
             <div className="text-center mb-10">
+
                 <h1
                     className="
                         text-4xl
@@ -676,9 +1061,12 @@ export default function AnnuairePage() {
                         mb-6
                     "
                 >
-                    Découvrez les meilleurs{" "}
-                    {keywordLabel} à {cityLabel} référencés
-                    dans notre annuaire SEO professionnel.
+
+                    {profiles.length > 0
+                        ? `Découvrez les entreprises et professionnels liés à l’activité « ${keyword} » à ${cityLabel} référencés dans notre annuaire SEO.`
+                        : `Recherchez des entreprises et professionnels liés à l’activité « ${keyword} » à ${cityLabel} grâce à notre annuaire SEO.`
+                    }
+
                 </p>
 
                 <Link
@@ -687,16 +1075,21 @@ export default function AnnuairePage() {
                 >
                     ← Retour à l'annuaire
                 </Link>
+
             </div>
 
             {/* ========================= */}
             {/* SEO CONTENT */}
             {/* ========================= */}
+
             {loading ? (
+
                 <p className="text-gray-500 mb-6">
                     Chargement...
                 </p>
+
             ) : seoPage?.content ? (
+
                 <div
                     className="
                         text-gray-700
@@ -705,19 +1098,27 @@ export default function AnnuairePage() {
                         leading-7
                     "
                     dangerouslySetInnerHTML={{
-                        __html: renderSeoContent(seoPage.content)
+                        __html:
+                            renderSeoContent(
+                                seoPage.content
+                            )
                     }}
                 />
+
             ) : (
+
                 <p className="text-red-500 mb-6">
                     Contenu SEO indisponible
                 </p>
+
             )}
 
             {/* ========================= */}
             {/* SEO DATA */}
             {/* ========================= */}
+
             {seoPage && (
+
                 <div
                     className="
                         bg-green-50
@@ -727,56 +1128,80 @@ export default function AnnuairePage() {
                         space-y-2
                     "
                 >
+
                     <p>
                         💰 Potentiel estimé :{" "}
+
                         <strong>
+
                             {seoPage.revenue
                                 ? `${Number(
                                     seoPage.revenue
                                 ).toLocaleString()}€ / mois`
-                                : "Non estimé"}
+                                : "Non estimé"
+                            }
+
                         </strong>
                     </p>
 
                     <p>
                         ⚔️ Concurrence :{" "}
+
                         <strong>
+
                             {seoPage.competition
                                 ? `${seoPage.competition}/100`
-                                : "Non disponible"}
+                                : "Non disponible"
+                            }
+
                         </strong>
                     </p>
+
                 </div>
+
             )}
 
             {/* ========================= */}
-            {/* LISTING */}
+            {/* EMPTY DIRECTORY */}
             {/* ========================= */}
-            {!loading && profiles.length === 0 && (
-                <div
-                    className="
-                        bg-gray-100
-                        p-4
-                        rounded-xl
-                        mb-8
-                        text-center
-                    "
-                >
-                    Aucun professionnel trouvé pour{" "}
-                    {keywordLabel} à {cityLabel}
-                </div>
-            )}
+
+            {!loading &&
+                profiles.length === 0 && (
+
+                    <div
+                        className="
+                            bg-gray-100
+                            p-4
+                            rounded-xl
+                            mb-8
+                            text-center
+                        "
+                    >
+                        Aucun professionnel trouvé pour{" "}
+                        {keywordLabel} à {cityLabel}
+                    </div>
+
+                )}
+
+            {/* ========================= */}
+            {/* PROFESSIONALS */}
+            {/* ========================= */}
 
             {profiles.length > 0 && (
+
                 <div className="space-y-4 mb-10">
+
                     <h2 className="text-2xl font-bold">
                         🔝 Meilleurs professionnels à{" "}
                         {cityLabel}
                     </h2>
 
                     {profiles.map((p, i) => (
+
                         <div
-                            key={p.id || i}
+                            key={
+                                p.id || i
+                            }
                             className="
                                 bg-white
                                 p-4
@@ -786,50 +1211,80 @@ export default function AnnuairePage() {
                                 border-gray-100
                             "
                         >
+
                             <h3 className="font-semibold text-lg">
+
                                 <Link
-                                    to={`/${lang}/annuaire/${toSlug(p.keyword)}-${toSlug(p.city)}`}
+                                    to={`/${lang}/annuaire/${toSlug(
+                                        p.keyword
+                                    )}-${toSlug(
+                                        p.city
+                                    )}`}
                                     className="text-indigo-700 hover:underline"
                                 >
                                     {p.name}
                                 </Link>
+
                             </h3>
 
                             <p className="text-sm text-gray-500">
+
                                 📍{" "}
+
                                 <Link
-                                    to={`/${lang}/annuaire/${toSlug(p.keyword)}-${toSlug(p.city)}`}
+                                    to={`/${lang}/annuaire/${toSlug(
+                                        p.keyword
+                                    )}-${toSlug(
+                                        p.city
+                                    )}`}
                                     className="hover:underline"
                                 >
                                     {p.city}
                                 </Link>
+
                             </p>
 
                             {p.keyword && (
+
                                 <p className="text-sm text-indigo-600">
+
                                     🔎{" "}
+
                                     <Link
-                                        to={`/${lang}/annuaire/${toSlug(p.keyword)}-${toSlug(p.city)}`}
+                                        to={`/${lang}/annuaire/${toSlug(
+                                            p.keyword
+                                        )}-${toSlug(
+                                            p.city
+                                        )}`}
                                         className="hover:underline"
                                     >
                                         {p.keyword}
                                     </Link>
+
                                 </p>
+
                             )}
 
                             {p.description && (
+
                                 <p className="text-gray-700 mt-2">
                                     {p.description}
                                 </p>
+
                             )}
+
                         </div>
+
                     ))}
+
                 </div>
+
             )}
 
             {/* ========================= */}
             {/* CTA */}
             {/* ========================= */}
+
             <div
                 className="
                     bg-indigo-50
@@ -839,6 +1294,7 @@ export default function AnnuairePage() {
                     text-center
                 "
             >
+
                 <p className="font-semibold mb-2">
                     🚀 Recevez des clients grâce au SEO
                 </p>
@@ -862,7 +1318,9 @@ export default function AnnuairePage() {
                 >
                     🚀 S'inscrire gratuitement
                 </Link>
+
             </div>
+
         </div>
     );
 }
