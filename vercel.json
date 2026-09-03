@@ -3,7 +3,7 @@
     "rewrites": [
         {
             "source": "/sitemap.xml",
-            "destination": "https://seo-tool-api-l06k.onrender.com/sitemap.xml"
+            "destination": "https://seo-tool-api-lo6k.onrender.com/sitemap.xml"
         },
         {
             "source": "/(.*)",
