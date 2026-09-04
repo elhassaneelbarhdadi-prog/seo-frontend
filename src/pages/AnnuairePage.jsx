@@ -109,6 +109,7 @@ const renderSeoContent = (rawContent = "") => {
      * Transforme les retours à la ligne
      * enregistrés littéralement.
      */
+
     content = content
         .replace(/\\r\\n/g, "\n")
         .replace(/\\n/g, "\n");
@@ -262,6 +263,7 @@ const renderSeoContent = (rawContent = "") => {
         /*
          * Ligne vide
          */
+
         if (!current) {
             flushParagraph();
             flushLists();
@@ -360,6 +362,7 @@ const renderSeoContent = (rawContent = "") => {
              * Un éventuel H1 généré par l'IA
              * devient donc un H2.
              */
+
             blocks.push(
                 `<h2>${formatInline(
                     h1[1].trim()
@@ -405,6 +408,9 @@ export default function AnnuairePage() {
 
     const [seoPage, setSeoPage] =
         useState(null);
+
+    const [seoPages, setSeoPages] =
+        useState([]);
 
     const [loading, setLoading] =
         useState(true);
@@ -492,12 +498,22 @@ export default function AnnuairePage() {
                  */
 
                 if (isDirectoryHome) {
-                    const profilesRes =
-                        await fetch(
+                    const [
+                        profilesRes,
+                        seoPagesRes
+                    ] = await Promise.all([
+                        fetch(
                             `${API_BASE}/business-profile`
-                        );
+                        ),
+                        fetch(
+                            `${API_BASE}/seo-page/directory-pages?limit=30`
+                        )
+                    ]);
 
                     let profilesData =
+                        null;
+
+                    let seoPagesData =
                         null;
 
                     try {
@@ -507,6 +523,13 @@ export default function AnnuairePage() {
                         throw new Error(
                             "Réponse business invalide"
                         );
+                    }
+
+                    try {
+                        seoPagesData =
+                            await seoPagesRes.json();
+                    } catch {
+                        seoPagesData = null;
                     }
 
                     if (!profilesRes.ok) {
@@ -530,6 +553,19 @@ export default function AnnuairePage() {
                         );
                     } else {
                         setProfiles([]);
+                    }
+
+                    if (
+                        seoPagesRes.ok &&
+                        Array.isArray(
+                            seoPagesData?.pages
+                        )
+                    ) {
+                        setSeoPages(
+                            seoPagesData.pages
+                        );
+                    } else {
+                        setSeoPages([]);
                     }
 
                     setSeoPage(null);
@@ -608,7 +644,9 @@ export default function AnnuairePage() {
                     return;
                 }
 
-                setSeoPage(seoData);
+                setSeoPage(
+                    seoData
+                );
 
                 if (
                     Array.isArray(
@@ -652,6 +690,7 @@ export default function AnnuairePage() {
                 }
 
             } catch (err) {
+
                 console.error(
                     "ANNUAIRE PAGE ERROR:",
                     err
@@ -665,9 +704,11 @@ export default function AnnuairePage() {
                 }
 
             } finally {
+
                 if (!cancelled) {
                     setLoading(false);
                 }
+
             }
         };
 
@@ -676,6 +717,7 @@ export default function AnnuairePage() {
         return () => {
             cancelled = true;
         };
+
     }, [
         slug,
         keyword,
@@ -703,6 +745,7 @@ export default function AnnuairePage() {
                 </Helmet>
 
                 <div className="max-w-4xl mx-auto p-10 text-center">
+
                     <h1 className="text-3xl font-bold mb-4">
                         Page annuaire introuvable
                     </h1>
@@ -718,6 +761,7 @@ export default function AnnuairePage() {
                     >
                         Retour à l'annuaire
                     </Link>
+
                 </div>
             </>
         );
@@ -774,6 +818,7 @@ export default function AnnuairePage() {
                         </Link>
 
                     </div>
+
                 </div>
 
                 {/* ========================= */}
@@ -938,6 +983,63 @@ export default function AnnuairePage() {
                     )}
 
                 </section>
+
+                {/* ========================= */}
+                {/* 🔗 PAGES SEO LOCALES */}
+                {/* ========================= */}
+
+                {seoPages.length > 0 && (
+                    <section className="mt-12">
+
+                        <div className="mb-6">
+
+                            <h2 className="text-2xl font-bold">
+                                🔎 Pages SEO locales
+                            </h2>
+
+                            <p className="text-gray-500 mt-2">
+                                Explorez nos pages dédiées à différentes activités et villes.
+                            </p>
+
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                            {seoPages.map((page, i) => (
+
+                                <Link
+                                    key={page.slug || i}
+                                    to={`/${lang}/annuaire/${page.slug}`}
+                                    className="
+                                        block
+                                        bg-white
+                                        border
+                                        border-gray-100
+                                        rounded-xl
+                                        p-5
+                                        shadow-sm
+                                        hover:shadow-md
+                                        hover:border-indigo-200
+                                        transition
+                                    "
+                                >
+
+                                    <h3 className="font-semibold text-indigo-700">
+                                        {capitalize(page.keyword)} à {capitalize(page.city)}
+                                    </h3>
+
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Voir la page SEO locale →
+                                    </p>
+
+                                </Link>
+
+                            ))}
+
+                        </div>
+
+                    </section>
+                )}
 
                 {/* ========================= */}
                 {/* CTA */}
