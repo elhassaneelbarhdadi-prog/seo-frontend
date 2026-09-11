@@ -418,6 +418,8 @@ export default function AnnuairePage() {
     const [error, setError] =
         useState("");
 
+    const [notFound, setNotFound] =
+        useState(false);
     /* ========================= */
     /* 🔐 PARSE SLUG */
     /* ========================= */
@@ -578,8 +580,8 @@ export default function AnnuairePage() {
                  * SLUG INVALIDE
                  * =========================
                  */
-
                 if (isInvalidSlug) {
+                    setNotFound(true);
                     return;
                 }
 
@@ -591,7 +593,8 @@ export default function AnnuairePage() {
 
                 const [
                     seoRes,
-                    profilesRes
+                    profilesRes,
+                    seoPagesRes
                 ] =
                     await Promise.all([
                         fetch(
@@ -602,11 +605,16 @@ export default function AnnuairePage() {
 
                         fetch(
                             `${API_BASE}/business-profile`
+                        ),
+
+                        fetch(
+                            `${API_BASE}/seo-page/directory-pages?limit=30`
                         )
                     ]);
 
                 let seoData = null;
                 let profilesData = null;
+                let seoPagesData = null;
 
                 try {
                     seoData =
@@ -626,7 +634,20 @@ export default function AnnuairePage() {
                     );
                 }
 
+                try {
+                    seoPagesData =
+                        await seoPagesRes.json();
+                } catch {
+                    seoPagesData = null;
+                }
+
                 if (!seoRes.ok) {
+
+                    if (seoRes.status === 404) {
+                        setNotFound(true);
+                        return;
+                    }
+
                     throw new Error(
                         seoData?.error ||
                         `SEO PAGE ERROR ${seoRes.status}`
@@ -647,6 +668,19 @@ export default function AnnuairePage() {
                 setSeoPage(
                     seoData
                 );
+
+                if (
+                    seoPagesRes.ok &&
+                    Array.isArray(
+                        seoPagesData?.pages
+                    )
+                ) {
+                    setSeoPages(
+                        seoPagesData.pages
+                    );
+                } else {
+                    setSeoPages([]);
+                }
 
                 if (
                     Array.isArray(
@@ -730,7 +764,7 @@ export default function AnnuairePage() {
     /* ❌ SLUG INVALIDE */
     /* ========================= */
 
-    if (isInvalidSlug) {
+    if (isInvalidSlug || notFound) {
         return (
             <>
                 <Helmet>
@@ -741,6 +775,10 @@ export default function AnnuairePage() {
                     <meta
                         name="description"
                         content="Découvrez notre annuaire SEO professionnel et trouvez des entreprises et professionnels référencés."
+                    />
+                    <meta
+                        name="robots"
+                        content="noindex, nofollow"
                     />
                 </Helmet>
 
@@ -1099,6 +1137,37 @@ export default function AnnuairePage() {
             ?.slice(0, 155) ||
         `Trouvez les meilleurs ${keywordLabel} à ${cityLabel}`;
 
+    const normalizeCity = (value = "") =>
+        String(value)
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .trim();
+
+    const relatedSeoPages =
+        seoPages
+            .filter((page) => {
+                if (!page?.slug) {
+                    return false;
+                }
+
+                if (
+                    page.slug === slug
+                ) {
+                    return false;
+                }
+
+                return (
+                    normalizeCity(
+                        page.city || ""
+                    ) ===
+                    normalizeCity(
+                        city
+                    )
+                );
+            })
+            .slice(0, 6);
+
     return (
         <div className="max-w-4xl mx-auto p-6 lg:p-10">
 
@@ -1381,6 +1450,63 @@ export default function AnnuairePage() {
 
                 </div>
 
+            )}
+
+            {/* ========================= */}
+            {/* 🔗 AUTRES PAGES SEO DE LA VILLE */}
+            {/* ========================= */}
+
+            {relatedSeoPages.length > 0 && (
+                <section className="mb-10">
+
+                    <div className="mb-5">
+
+                        <h2 className="text-2xl font-bold">
+                            🔎 Autres recherches à {cityLabel}
+                        </h2>
+
+                        <p className="text-gray-500 mt-2">
+                            Découvrez d'autres pages SEO consacrées à des activités disponibles dans cette ville.
+                        </p>
+
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                        {relatedSeoPages.map((page, i) => (
+
+                            <Link
+                                key={page.slug || i}
+                                to={`/${lang}/annuaire/${page.slug}`}
+                                className="
+                                    block
+                                    bg-white
+                                    border
+                                    border-gray-100
+                                    rounded-xl
+                                    p-5
+                                    shadow-sm
+                                    hover:shadow-md
+                                    hover:border-indigo-200
+                                    transition
+                                "
+                            >
+
+                                <h3 className="font-semibold text-indigo-700">
+                                    {capitalize(page.keyword)} à {capitalize(page.city)}
+                                </h3>
+
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Voir la page SEO locale →
+                                </p>
+
+                            </Link>
+
+                        ))}
+
+                    </div>
+
+                </section>
             )}
 
             {/* ========================= */}
