@@ -1007,7 +1007,7 @@ export default function AnnuairePage() {
 
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
                         <Link
-                            to={`/${lang}/register`}
+                            to={`/${lang}/referencer-mon-entreprise`}
                             className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90"
                         >
                             🚀 Référencer mon entreprise
