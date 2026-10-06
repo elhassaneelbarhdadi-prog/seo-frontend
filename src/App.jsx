@@ -10,7 +10,7 @@ import {
 
 import { useEffect, useMemo } from "react";
 import FreeAnalyzer from "./pages/FreeAnalyzer";
-
+import ReferencerEntreprise from "./pages/ReferencerEntreprise";
 /* ========================= */
 /* LAYOUT */
 /* ========================= */
@@ -234,7 +234,14 @@ export default function App() {
             path="/:lang/projet/:keyword"
             element={<ProjectPage />}
           />
+          {/* ========================= */}
+          {/* 🚀 RÉFÉRENCER MON ENTREPRISE */}
+          {/* ========================= */}
 
+          <Route
+            path="/:lang/referencer-mon-entreprise"
+            element={<ReferencerEntreprise />}
+          />
           {/* ========================= */}
           {/* ANNUAIRE PUBLIC */}
           {/* ========================= */}
