@@ -31,7 +31,7 @@ import Annuaire from "./pages/Annuaire";
 import BusinessProfile from "./pages/BusinessProfile";
 import LandingKeyword from "./pages/LandingKeyword";
 import AnnuairePage from "./pages/AnnuairePage";
-
+import ReferencementLocal from "./pages/ReferencementLocal";
 /* ========================= */
 /* COMPONENTS */
 /* ========================= */
@@ -241,6 +241,10 @@ export default function App() {
           <Route
             path="/:lang/referencer-mon-entreprise"
             element={<ReferencerEntreprise />}
+          />
+          <Route
+            path="/:lang/referencement-local"
+            element={<ReferencementLocal />}
           />
           {/* ========================= */}
           {/* ANNUAIRE PUBLIC */}
