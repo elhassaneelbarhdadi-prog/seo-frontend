@@ -6,7 +6,7 @@ export default function Home() {
     const navigate = useNavigate();
     const { lang = "fr" } = useParams();
 
-    const canonicalUrl = `https://referenciaseo.com/${lang}/`;
+    const canonicalUrl = `https://www.referenciaseo.com/${lang}/`;
 
     return (
         <div className="min-h-screen bg-white">
