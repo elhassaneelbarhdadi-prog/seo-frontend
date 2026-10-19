@@ -7,10 +7,11 @@ import {
   useParams,
   Link
 } from "react-router-dom";
-
+import Contact from "./pages/Contact";
 import { useEffect, useMemo } from "react";
 import FreeAnalyzer from "./pages/FreeAnalyzer";
 import ReferencerEntreprise from "./pages/ReferencerEntreprise";
+import Footer from "./components/Footer";
 /* ========================= */
 /* LAYOUT */
 /* ========================= */
@@ -200,6 +201,10 @@ export default function App() {
           {/* ========================= */}
           {/* PUBLIC */}
           {/* ========================= */}
+          <Route
+            path="/:lang/contact"
+            element={<Contact />}
+          />
 
           {/* HOME */}
           <Route
@@ -331,7 +336,8 @@ export default function App() {
           />
 
         </Routes>
-
+        {/* PIED DE PAGE COMMUN */}
+        <Footer />
       </Router>
 
     </ErrorBoundary>
